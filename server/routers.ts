@@ -5,6 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import * as db from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { COOKIE_NAME } from "@shared/const";
+import PDFDocument from "pdfkit";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -108,6 +109,28 @@ function toBookingFields(input: z.infer<typeof bookingInput>) {
   return fields;
 }
 
+async function createTicketPdf(booking: Awaited<ReturnType<typeof db.getBookingById>>) {
+  if (!booking) throw new Error("Booking not found");
+  const doc = new PDFDocument({ size: "LETTER", margin: 46 });
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+  const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
+  doc.fontSize(22).fillColor("#0f2a52").text("BLUEBIRD AIRWAYS");
+  doc.moveDown(.4).fontSize(10).fillColor("#66778f").text("CONFIRMED TRAVELER TICKET");
+  doc.moveDown(1).fontSize(17).fillColor("#0f2a52").text(`${booking.departureCity}  →  ${booking.arrivalCity}`);
+  doc.moveDown(.5).fontSize(10).fillColor("#3b4e68").text(`Booking reference: ${booking.bookingReference}`);
+  doc.text(`Traveler: ${booking.travelerName}`);
+  doc.text(`Airline: ${booking.airlineName || "Airline"} · ${booking.flightNumber || "Flight pending"}`);
+  doc.text(`Departure: ${booking.departureAt.toLocaleString()} · ${booking.departureAirport || "Airport pending"}`);
+  doc.text(`Arrival: ${booking.arrivalAt.toLocaleString()} · ${booking.arrivalAirport || "Airport pending"}`);
+  doc.text(`Seat: ${booking.seatNumber || "Not assigned"} · E-ticket: ${booking.eTicketNumber || "—"}`);
+  doc.text(`Payment: ${booking.paymentStatus} · Paid $${booking.amountPaid} · Unpaid $${Math.max(0, Number(booking.amountDue) - Number(booking.amountPaid)).toFixed(2)}`);
+  doc.moveDown(1).fontSize(11).fillColor("#0f2a52").text("Airline rules & regulations");
+  doc.moveDown(.4).fontSize(9).fillColor("#52617a").text("Plans can change. Airline fees may apply according to the airline's own policies. Tickets are nonrefundable if requirements are not met, nontransferable, and name changes are not allowed. Please read the rules carefully.", { width: 500 });
+  doc.end();
+  return done;
+}
+
 const flightSearchInput = z.object({
   from: z.string().trim().min(2).max(120),
   to: z.string().trim().min(2).max(120),
@@ -117,9 +140,12 @@ const flightSearchInput = z.object({
 
 const fallbackFlights = [
   { airline: "Bluebird Airways", flightNumber: "BB204", fromCode: "JFK", toCode: "LHR", fromName: "New York", toName: "London", departure: "08:10", arrival: "20:05", duration: "6h 55m", stops: "Non-stop", price: 737 },
-  { airline: "Bluebird Airways", flightNumber: "BB318", fromCode: "YYZ", toCode: "CDG", fromName: "Toronto", toName: "Paris", departure: "18:40", arrival: "07:20", duration: "7h 40m", stops: "Non-stop", price: 812 },
-  { airline: "Bluebird Airways", flightNumber: "BB512", fromCode: "MIA", toCode: "MAD", fromName: "Miami", toName: "Madrid", departure: "21:25", arrival: "11:10", duration: "8h 45m", stops: "Non-stop", price: 684 },
-  { airline: "Bluebird Airways", flightNumber: "BB740", fromCode: "LAX", toCode: "AMS", fromName: "Los Angeles", toName: "Amsterdam", departure: "16:15", arrival: "12:35", duration: "11h 20m", stops: "Single layover", price: 905 },
+  { airline: "British Airways", flightNumber: "BA178", fromCode: "JFK", toCode: "LHR", fromName: "New York", toName: "London", departure: "21:30", arrival: "09:25", duration: "6h 55m", stops: "Non-stop", price: 812 },
+  { airline: "Air Canada", flightNumber: "AC872", fromCode: "YYZ", toCode: "CDG", fromName: "Toronto", toName: "Paris", departure: "18:40", arrival: "07:20", duration: "7h 40m", stops: "Non-stop", price: 812 },
+  { airline: "Lufthansa", flightNumber: "LH463", fromCode: "MIA", toCode: "FRA", fromName: "Miami", toName: "Frankfurt", departure: "16:45", arrival: "07:10", duration: "9h 25m", stops: "Non-stop", price: 774 },
+  { airline: "LATAM Airlines", flightNumber: "LA501", fromCode: "JFK", toCode: "SCL", fromName: "New York", toName: "Santiago", departure: "20:00", arrival: "07:35", duration: "10h 35m", stops: "Non-stop", price: 698 },
+  { airline: "United Airlines", flightNumber: "UA78", fromCode: "LAX", toCode: "AMS", fromName: "Los Angeles", toName: "Amsterdam", departure: "16:15", arrival: "12:35", duration: "11h 20m", stops: "Single layover", price: 905 },
+  { airline: "Air France", flightNumber: "AF65", fromCode: "LAX", toCode: "CDG", fromName: "Los Angeles", toName: "Paris", departure: "13:40", arrival: "09:15", duration: "10h 35m", stops: "Non-stop", price: 918 },
 ];
 
 export const appRouter = router({
@@ -168,6 +194,17 @@ export const appRouter = router({
         }
         throw error;
       }
+    }),
+    sendConfirmation: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+      const booking = await db.getBookingById(input.id);
+      if (!booking?.travelerEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Add a traveler email before sending a confirmation." });
+      if (booking.paymentStatus !== "paid" || booking.ticketStatus !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only paid and confirmed bookings can receive a ticket email." });
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email sending is not configured yet. Add RESEND_API_KEY and EMAIL_FROM to the project environment." });
+      const pdf = await createTicketPdf(booking);
+      const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM || "Bluebird Airways <onboarding@resend.dev>", to: [booking.travelerEmail], subject: `Your Bluebird Airways ticket · ${booking.bookingReference}`, html: `<p>Hello ${booking.travelerName},</p><p>Your paid and confirmed Bluebird Airways booking <strong>${booking.bookingReference}</strong> is attached as a PDF ticket.</p><p>Departure: ${booking.departureCity} · Arrival: ${booking.arrivalCity}</p><p>Keep your booking reference nearby.</p>`, attachments: [{ filename: `bluebird-${booking.bookingReference}.pdf`, content: pdf.toString("base64") }] }) });
+      if (!response.ok) throw new TRPCError({ code: "BAD_GATEWAY", message: "The email provider could not send the booking confirmation." });
+      return { sent: true as const, email: booking.travelerEmail };
     }),
   }),
   flights: router({

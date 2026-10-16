@@ -366,3 +366,11 @@ button:disabled { cursor: not-allowed; opacity: .64; }
 .upload-field input { width: 100%; border: 1px dashed #b6c5d8; border-radius: 7px; padding: 9px 10px; color: #506078; background: #f8fafd; font-size: .78rem; letter-spacing: 0; text-transform: none; }
 .upload-field small { color: #8491a5; font-size: .72rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
 .clear-logo-button { align-self: flex-start; border: 0; background: transparent; padding: 0; }
+.booking-note { color: #fff; background: linear-gradient(135deg, #7f2731, #aa3f49); border: 1px solid rgba(255,255,255,.24); }
+.booking-note strong, .booking-note p { color: #fff !important; }
+.booking-note strong { font-size: .78rem; letter-spacing: .04em; }
+.booking-note p { margin: 8px 0 0; font-size: .78rem; line-height: 1.65; }
+.admin-row-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.email-row-button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #bbcadb; border-radius: 7px; padding: 6px 9px; color: var(--blue); background: #f7faff; font-size: .7rem; font-weight: 750; }
+.email-row-button:hover:not(:disabled) { border-color: var(--blue); background: #eef4fb; }
+.email-row-button:disabled { cursor: not-allowed; opacity: .5; }

@@ -103,6 +103,13 @@ export async function getBookingByReference(reference: string) {
   return result[0] ?? null;
 }
 
+export async function getBookingById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.select().from(flightBookings).where(eq(flightBookings.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
 export function toPublicBooking(booking: Awaited<ReturnType<typeof getBookingByReference>>) {
   if (!booking) return null;
   return {
