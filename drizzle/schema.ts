@@ -1,17 +1,10 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { datetime, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
+ * Core user table backing the Manus OAuth flow.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -25,4 +18,34 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const flightBookings = mysqlTable("flight_bookings", {
+  id: int("id").autoincrement().primaryKey(),
+  bookingReference: varchar("bookingReference", { length: 20 }).notNull().unique(),
+  travelerName: varchar("travelerName", { length: 180 }).notNull(),
+  travelerEmail: varchar("travelerEmail", { length: 320 }),
+  travelerPhone: varchar("travelerPhone", { length: 60 }),
+  departureCity: varchar("departureCity", { length: 120 }).notNull(),
+  departureState: varchar("departureState", { length: 120 }),
+  departureCountry: varchar("departureCountry", { length: 120 }).notNull(),
+  arrivalCity: varchar("arrivalCity", { length: 120 }).notNull(),
+  arrivalState: varchar("arrivalState", { length: 120 }),
+  arrivalCountry: varchar("arrivalCountry", { length: 120 }).notNull(),
+  departureAt: datetime("departureAt").notNull(),
+  arrivalAt: datetime("arrivalAt").notNull(),
+  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  paymentStatus: mysqlEnum("paymentStatus", ["paid", "partially_paid", "unpaid"]).notNull().default("unpaid"),
+  notes: text("notes"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FlightBooking = typeof flightBookings.$inferSelect;
+export type InsertFlightBooking = typeof flightBookings.$inferInsert;
+
+export const ownerClaims = mysqlTable("owner_claims", {
+  id: int("id").primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().unique(),
+  claimedAt: timestamp("claimedAt").defaultNow().notNull(),
+});

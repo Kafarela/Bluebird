@@ -1,0 +1,50 @@
+import { ReactNode } from "react";
+import { LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+
+export function SiteShell({ children }: { children: ReactNode }) {
+  const { user, isAuthenticated, logout } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch {
+      navigate("/");
+    }
+  };
+
+  return (
+    <div className="site-root">
+      <header className="site-header">
+        <div className="page-wrap header-inner">
+          <Link href="/" className="brand" aria-label="Bluebird Airways home"><span className="brand-mark">✦</span><span>bluebird <em>airways</em></span></Link>
+          <nav className="main-nav" aria-label="Primary navigation">
+            <Link href="/book">Book a flight</Link>
+            <Link href="/bookings">My bookings</Link>
+            <Link href="/destinations">Destinations</Link>
+            <Link href="/about">About us</Link>
+          </nav>
+          <div className="header-actions">
+            <Link href="/admin" className="admin-link"><ShieldCheck size={15} /> Owner console</Link>
+            {isAuthenticated ? <><span className="signed-in-name">{user?.name || "Traveler"}</span><button className="icon-button" onClick={handleLogout} aria-label="Log out"><LogOut size={17} /></button></> : <><Link href="/login" className="login-link"><LogIn size={16} /> Log in</Link><Link href="/signup" className="header-cta">Sign up</Link></>}
+          </div>
+        </div>
+      </header>
+      <div className="owner-strip"><div className="page-wrap owner-strip-inner"><span><ShieldCheck size={14} /> Tickets are created and maintained in the owner console.</span><Link href="/admin">Open owner console <span aria-hidden="true">↗</span></Link></div></div>
+      {children}
+      <footer className="site-footer">
+        <div className="page-wrap footer-grid">
+          <div className="footer-brand-block"><Link href="/" className="brand footer-brand"><span className="brand-mark">✦</span><span>bluebird <em>airways</em></span></Link><p>A calmer way to keep your journey moving.</p><span className="footer-rule" /></div>
+          <div><h4>Explore</h4><Link href="/book">Book a flight</Link><Link href="/destinations">Destinations</Link><Link href="/bookings">My bookings</Link></div>
+          <div><h4>Company</h4><Link href="/about">About Bluebird</Link><Link href="/help">Help centre</Link><Link href="/admin">Owner console</Link></div>
+          <div><h4>Stay close</h4><p className="footer-small">Keep your booking reference nearby. It is the key to your itinerary details.</p><Link href="/bookings" className="footer-callout">Find my booking <span>→</span></Link></div>
+        </div>
+        <div className="page-wrap footer-bottom"><span>© 2026 Bluebird Airways</span><span>Clear details. Calmer travel.</span></div>
+      </footer>
+    </div>
+  );
+}
