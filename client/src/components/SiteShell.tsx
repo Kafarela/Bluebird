@@ -29,12 +29,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <Link href="/about">About us</Link>
           </nav>
           <div className="header-actions">
-            <Link href="/admin" className="admin-link"><ShieldCheck size={15} /> Owner console</Link>
             {isAuthenticated ? <><span className="signed-in-name">{user?.name || "Traveler"}</span><button className="icon-button" onClick={handleLogout} aria-label="Log out"><LogOut size={17} /></button></> : <><Link href="/login" className="login-link"><LogIn size={16} /> Log in</Link><Link href="/signup" className="header-cta">Sign up</Link></>}
           </div>
         </div>
       </header>
-      <div className="owner-strip"><div className="page-wrap owner-strip-inner"><span><ShieldCheck size={14} /> Tickets are created and maintained in the owner console.</span><Link href="/admin">Open owner console <span aria-hidden="true">↗</span></Link></div></div>
       {children}
       <footer className="site-footer">
         <div className="page-wrap footer-grid">
