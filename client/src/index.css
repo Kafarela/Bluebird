@@ -359,3 +359,10 @@ button:disabled { cursor: not-allowed; opacity: .64; }
 .results-note { margin: 15px 0 0; color: #8290a2; font-size: .73rem; }
 @media print { body { background: white; } .site-header, .site-footer, .inner-hero, .lookup-card, .ticket-actions, .ticket-rules { display: none !important; } .page-wrap { width: 100%; } .section-block { padding: 0; } .lookup-result-area, .booking-result, .enriched-ticket { margin: 0 !important; box-shadow: none !important; border: 0 !important; } .ticket-summary-grid, .ticket-finance-grid { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 @media (max-width: 760px) { .flight-search-card { display: block; } .flight-search-card .primary-button { margin-top: 15px; width: 100%; } .flight-result-row { grid-template-columns: 1fr 1fr; gap: 13px; } .flight-airline-small { grid-column: 1 / -1; } .flight-line { justify-content: center; } .flight-price { align-items: flex-start; } }
+
+.airline-logo-mark img, .airline-logo-preview img { width: 72%; height: 72%; object-fit: contain; border-radius: 50%; }
+.airline-logo-fields { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.upload-field { display: flex; flex-direction: column; gap: 7px; color: #68768e; font-size: .69rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.upload-field input { width: 100%; border: 1px dashed #b6c5d8; border-radius: 7px; padding: 9px 10px; color: #506078; background: #f8fafd; font-size: .78rem; letter-spacing: 0; text-transform: none; }
+.upload-field small { color: #8491a5; font-size: .72rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.clear-logo-button { align-self: flex-start; border: 0; background: transparent; padding: 0; }

@@ -29,6 +29,7 @@ export const flightBookings = mysqlTable("flight_bookings", {
   seatNumber: varchar("seatNumber", { length: 20 }),
   layoverHub: mysqlEnum("layoverHub", ["non_stop", "single_layover", "multi_stop"]),
   airlineName: varchar("airlineName", { length: 160 }),
+  airlineLogoUrl: text("airlineLogoUrl"),
   flightNumber: varchar("flightNumber", { length: 20 }),
   ticketType: mysqlEnum("ticketType", ["one_way", "round_trip"]),
   flightClass: mysqlEnum("flightClass", ["economy", "business", "first"]),

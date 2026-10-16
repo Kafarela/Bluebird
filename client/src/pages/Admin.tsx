@@ -10,7 +10,7 @@ type BookingForm = {
   bookingReference: string; travelerName: string; travelerEmail: string; travelerPhone: string;
   travelerType: "adult" | "kid" | "teenager"; travelerCount: string; seatNumber: string;
   layoverHub: "non_stop" | "single_layover" | "multi_stop";
-  airlineName: string; flightNumber: string; ticketType: "one_way" | "round_trip"; flightClass: "economy" | "business" | "first";
+  airlineName: string; airlineLogoUrl: string; flightNumber: string; ticketType: "one_way" | "round_trip"; flightClass: "economy" | "business" | "first";
   departureCity: string; departureState: string; departureCountry: string; departureAirport: string; departureTerminal: string;
   arrivalCity: string; arrivalState: string; arrivalCountry: string; arrivalAirport: string; arrivalTerminal: string;
   departureAt: string; arrivalAt: string; totalTravelTime: string; totalMiles: string;
@@ -19,7 +19,7 @@ type BookingForm = {
 };
 
 function toLocalInput(value: Date) { return new Date(value.getTime() - value.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
-const emptyForm: BookingForm = { bookingReference: "", travelerName: "", travelerEmail: "", travelerPhone: "", travelerType: "adult", travelerCount: "1", seatNumber: "", layoverHub: "non_stop", airlineName: "", flightNumber: "", ticketType: "one_way", flightClass: "economy", departureCity: "", departureState: "", departureCountry: "United States", departureAirport: "", departureTerminal: "", arrivalCity: "", arrivalState: "", arrivalCountry: "United Kingdom", arrivalAirport: "", arrivalTerminal: "", departureAt: "", arrivalAt: "", totalTravelTime: "", totalMiles: "0", ticketStatus: "confirmed", eTicketNumber: "", bookingAt: toLocalInput(new Date()), amountDue: "0.00", amountPaid: "0.00", paymentStatus: "unpaid", notes: "" };
+const emptyForm: BookingForm = { bookingReference: "", travelerName: "", travelerEmail: "", travelerPhone: "", travelerType: "adult", travelerCount: "1", seatNumber: "", layoverHub: "non_stop", airlineName: "", airlineLogoUrl: "", flightNumber: "", ticketType: "one_way", flightClass: "economy", departureCity: "", departureState: "", departureCountry: "United States", departureAirport: "", departureTerminal: "", arrivalCity: "", arrivalState: "", arrivalCountry: "United Kingdom", arrivalAirport: "", arrivalTerminal: "", departureAt: "", arrivalAt: "", totalTravelTime: "", totalMiles: "0", ticketStatus: "confirmed", eTicketNumber: "", bookingAt: toLocalInput(new Date()), amountDue: "0.00", amountPaid: "0.00", paymentStatus: "unpaid", notes: "" };
 
 function asLocalInput(value: unknown) { const date = value instanceof Date ? value : new Date(String(value)); return Number.isNaN(date.getTime()) ? "" : toLocalInput(date); }
 function displayDate(value: unknown) { const date = value instanceof Date ? value : new Date(String(value)); return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date); }
@@ -41,13 +41,21 @@ export default function Admin() {
   const canClaim = isAuthenticated && !ownerStatus.data?.hasOwner;
   const amountUnpaid = Math.max(0, Number(form.amountDue || 0) - Number(form.amountPaid || 0)).toFixed(2);
   const set = (key: keyof BookingForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const handleLogoUpload = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please choose a PNG, JPG, WEBP, or SVG image."); return; }
+    if (file.size > 500_000) { setError("Logo images must be 500 KB or smaller."); return; }
+    const reader = new FileReader();
+    reader.onload = () => set("airlineLogoUrl", String(reader.result || ""));
+    reader.readAsDataURL(file);
+  };
   const resetForm = () => { setForm({ ...emptyForm, bookingAt: toLocalInput(new Date()) }); setEditingId(null); };
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setError(""); setNotice("");
     const input = {
       bookingReference: form.bookingReference, travelerName: form.travelerName, travelerEmail: form.travelerEmail, travelerPhone: form.travelerPhone,
       travelerType: form.travelerType, travelerCount: form.travelerCount, seatNumber: form.seatNumber, layoverHub: form.layoverHub,
-      airlineName: form.airlineName, flightNumber: form.flightNumber, ticketType: form.ticketType, flightClass: form.flightClass,
+      airlineName: form.airlineName, airlineLogoUrl: form.airlineLogoUrl, flightNumber: form.flightNumber, ticketType: form.ticketType, flightClass: form.flightClass,
       departure: { city: form.departureCity, state: form.departureState, country: form.departureCountry },
       arrival: { city: form.arrivalCity, state: form.arrivalState, country: form.arrivalCountry },
       departureAirport: form.departureAirport, departureTerminal: form.departureTerminal, arrivalAirport: form.arrivalAirport, arrivalTerminal: form.arrivalTerminal,
@@ -64,7 +72,7 @@ export default function Admin() {
       bookingReference: booking.bookingReference, travelerName: booking.travelerName, travelerEmail: booking.travelerEmail || "", travelerPhone: booking.travelerPhone || "",
       travelerType: booking.travelerType || "adult", travelerCount: String(booking.travelerCount || 1), seatNumber: booking.seatNumber || "",
       layoverHub: booking.layoverHub || "non_stop",
-      airlineName: booking.airlineName || "", flightNumber: booking.flightNumber || "", ticketType: booking.ticketType || "one_way", flightClass: booking.flightClass || "economy",
+      airlineName: booking.airlineName || "", airlineLogoUrl: booking.airlineLogoUrl || "", flightNumber: booking.flightNumber || "", ticketType: booking.ticketType || "one_way", flightClass: booking.flightClass || "economy",
       departureCity: booking.departureCity, departureState: booking.departureState || "", departureCountry: booking.departureCountry, departureAirport: booking.departureAirport || "", departureTerminal: booking.departureTerminal || "",
       arrivalCity: booking.arrivalCity, arrivalState: booking.arrivalState || "", arrivalCountry: booking.arrivalCountry, arrivalAirport: booking.arrivalAirport || "", arrivalTerminal: booking.arrivalTerminal || "",
       departureAt: asLocalInput(booking.departureAt), arrivalAt: asLocalInput(booking.arrivalAt), totalTravelTime: booking.totalTravelTime || "", totalMiles: String(booking.totalMiles || 0),
@@ -84,7 +92,7 @@ export default function Admin() {
     <div className="form-section-label"><span>01</span> Traveler details</div>
     <div className="form-grid-two"><label className="field"><span>Traveler name *</span><input value={form.travelerName} onChange={(e) => set("travelerName", e.target.value)} placeholder="Jordan Lee" required /></label><label className="field"><span>Traveler email</span><input type="email" value={form.travelerEmail} onChange={(e) => set("travelerEmail", e.target.value)} placeholder="traveler@example.com" /></label><label className="field"><span>Traveler phone</span><input value={form.travelerPhone} onChange={(e) => set("travelerPhone", e.target.value)} placeholder="+1 555 0100" /></label><label className="field"><span>Traveler type *</span><select value={form.travelerType} onChange={(e) => set("travelerType", e.target.value)}><option value="adult">Adult</option><option value="kid">Kid</option><option value="teenager">Teenager</option></select></label><label className="field"><span>Number of travelers *</span><input type="number" min="1" max="99" value={form.travelerCount} onChange={(e) => set("travelerCount", e.target.value)} required /></label><label className="field"><span>Seat number</span><input value={form.seatNumber} onChange={(e) => set("seatNumber", e.target.value.toUpperCase())} placeholder="14A" /></label><label className="field"><span>Layover hub *</span><select value={form.layoverHub} onChange={(e) => set("layoverHub", e.target.value)}><option value="non_stop">Non-stop</option><option value="single_layover">Single layover</option><option value="multi_stop">Multi-stop</option></select></label></div>
     <div className="form-section-label"><span>02</span> Airline & ticket</div>
-    <div className="airline-form-row"><div className="airline-logo-preview">{airlineMark(form.airlineName)}</div><label className="field"><span>Airline name *</span><input value={form.airlineName} onChange={(e) => set("airlineName", e.target.value)} placeholder="Bluebird Airways" required /><small>The airline logo mark is generated automatically from the airline name.</small></label></div>
+    <div className="airline-form-row"><div className="airline-logo-preview">{form.airlineLogoUrl ? <img src={form.airlineLogoUrl} alt="Airline logo preview" /> : airlineMark(form.airlineName)}</div><div className="airline-logo-fields"><label className="field"><span>Airline name *</span><input value={form.airlineName} onChange={(e) => set("airlineName", e.target.value)} placeholder="Bluebird Airways" required /></label><label className="field"><span>Logo image URL</span><input type="url" value={form.airlineLogoUrl.startsWith("data:") ? "" : form.airlineLogoUrl} onChange={(e) => set("airlineLogoUrl", e.target.value)} placeholder="https://example.com/logo.png" /><small>Paste a direct HTTPS image URL, or upload a logo below.</small></label><label className="upload-field"><span>Upload logo image</span><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => handleLogoUpload(e.target.files?.[0])} /><small>PNG, JPG, WEBP, or SVG · 500 KB max</small></label>{form.airlineLogoUrl && <button type="button" className="text-link navy-link clear-logo-button" onClick={() => set("airlineLogoUrl", "")}>Remove custom logo</button>}</div></div>
     <div className="form-grid-three"><label className="field"><span>Flight number *</span><input value={form.flightNumber} onChange={(e) => set("flightNumber", e.target.value.toUpperCase())} placeholder="AB123" pattern="[A-Za-z0-9-]+" required /></label><label className="field"><span>Ticket type *</span><select value={form.ticketType} onChange={(e) => set("ticketType", e.target.value)}><option value="one_way">One way</option><option value="round_trip">Round trip</option></select></label><label className="field"><span>Flight class *</span><select value={form.flightClass} onChange={(e) => set("flightClass", e.target.value)}><option value="economy">Economy</option><option value="business">Business class</option><option value="first">First class</option></select></label></div>
     <div className="form-section-label"><span>03</span> Airports & route</div>
     <div className="location-block"><p>Departure airport</p><div className="form-grid-two"><label className="field"><span>Airport name / code *</span><input value={form.departureAirport} onChange={(e) => set("departureAirport", e.target.value)} placeholder="JFK — John F. Kennedy International" required /></label><label className="field"><span>Terminal name</span><input value={form.departureTerminal} onChange={(e) => set("departureTerminal", e.target.value)} placeholder="Terminal 4" /></label></div><div className="form-grid-three"><label className="field"><span>City *</span><input value={form.departureCity} onChange={(e) => set("departureCity", e.target.value)} placeholder="New York" required /></label><label className="field"><span>State / province</span><input value={form.departureState} onChange={(e) => set("departureState", e.target.value)} placeholder="New York" /></label><label className="field"><span>Country *</span><input value={form.departureCountry} onChange={(e) => set("departureCountry", e.target.value)} placeholder="United States" required /></label></div></div>
