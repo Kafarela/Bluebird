@@ -467,3 +467,12 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .newsletter-form .primary-button:hover { background: #d5b77f; }
 .newsletter-form small { grid-column: 1 / -1; color: #bcd0d5; font-size: .7rem; }
 @media (max-width: 760px) { .newsletter-inner { grid-template-columns: 1fr; gap: 26px; padding-top: 48px; padding-bottom: 48px; } .newsletter-form { grid-template-columns: 1fr; } .newsletter-form small { grid-column: auto; } }
+
+/* Ticket state treatment: one shared route/payment surface, red only when money remains due */
+.ticket-summary-grid, .ticket-finance-grid { background-image: linear-gradient(180deg, rgba(8,31,70,.78), rgba(24,39,58,.94)), url('/manus-storage/async-images/Nd9x4AfB7foBInMmgYv6Q0/image-1.webp'); background-size: cover; background-position: center; }
+.booking-note { background: transparent; border: 0; color: #fff; }
+.booking-note strong, .booking-note p { color: #fff !important; }
+.has-unpaid-balance .booking-note { margin: 22px 28px 0; padding: 16px 18px; border: 1px solid rgba(255,255,255,.24); border-radius: 9px; background: linear-gradient(135deg, #7f2731, #aa3f49); }
+.footer-brand, .site-footer .footer-brand span, .site-footer .footer-brand em { color: #fff; font-weight: 850; }
+.site-footer .footer-brand em { font-style: normal; }
+@media (max-width: 560px) { .has-unpaid-balance .booking-note { margin-left: 21px; margin-right: 21px; } }
