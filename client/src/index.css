@@ -137,6 +137,8 @@ button:disabled { cursor: not-allowed; opacity: .64; }
 .auth-card h2, .lookup-card h2, .booking-result h2, .planner-card h2, .owner-note-card h3, .info-main h2, .info-aside h3, .admin-form-card h2, .booking-list-card h2 { color: var(--navy); letter-spacing: -.045em; line-height: 1.1; margin: 0 0 12px; }
 .auth-card p:not(.card-kicker), .owner-note-card p:not(.card-kicker), .info-main p, .info-aside p { color: #69778d; font-size: .87rem; line-height: 1.7; }
 .wide-button { width: 100%; margin-top: 15px; }
+.auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; text-align: left; }
+.auth-form .wide-button { margin-top: 2px; }
 .fine-print { font-size: .73rem !important; color: #8b98aa !important; margin-top: 17px; }
 .action-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 21px; }
 .auth-switch { margin-top: 24px; font-size: .8rem; color: #78859a; }
