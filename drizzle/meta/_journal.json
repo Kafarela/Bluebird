@@ -29,6 +29,13 @@
       "when": 1792130167764,
       "tag": "0003_true_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1792134870627,
+      "tag": "0004_sticky_old_lace",
+      "breakpoints": true
     }
   ]
 }

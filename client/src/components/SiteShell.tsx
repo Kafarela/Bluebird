@@ -24,6 +24,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <Link href="/" className="brand" aria-label="Bluebird Airways home"><span className="brand-mark">✦</span><span>BLUEBIRD <em>AIRWAYS</em></span></Link>
           <nav className="main-nav" aria-label="Primary navigation">
             <Link href="/book">Book a flight</Link>
+            <Link href="/search-flights">Search flights</Link>
             <Link href="/bookings">My bookings</Link>
             <Link href="/destinations">Destinations</Link>
             <Link href="/about">About us</Link>
@@ -37,7 +38,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <footer className="site-footer">
         <div className="page-wrap footer-grid">
           <div className="footer-brand-block"><Link href="/" className="brand footer-brand"><span className="brand-mark">✦</span><span>BLUEBIRD <em>AIRWAYS</em></span></Link><p>A calmer way to keep your journey moving.</p><span className="footer-rule" /></div>
-          <div><h4>Explore</h4><Link href="/book">Book a flight</Link><Link href="/destinations">Destinations</Link><Link href="/bookings">My bookings</Link></div>
+          <div><h4>Explore</h4><Link href="/book">Book a flight</Link><Link href="/search-flights">Search flights</Link><Link href="/destinations">Destinations</Link><Link href="/bookings">My bookings</Link></div>
           <div><h4>Company</h4><Link href="/about">About Bluebird</Link><Link href="/help">Help centre</Link><Link href="/admin">Owner console</Link></div>
           <div><h4>Stay close</h4><p className="footer-small">Keep your booking reference nearby. It is the key to your itinerary details.</p><Link href="/bookings" className="footer-callout">Find my booking <span>→</span></Link></div>
         </div>

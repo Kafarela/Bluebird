@@ -1,0 +1,1 @@
+ALTER TABLE `flight_bookings` ADD `layoverHub` enum('non_stop','single_layover','multi_stop');

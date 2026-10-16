@@ -20,6 +20,7 @@ const bookingInput = z.object({
   travelerType: z.enum(["adult", "kid", "teenager"]),
   travelerCount: z.coerce.number().int().min(1).max(99),
   seatNumber: z.string().trim().max(20).optional().or(z.literal("")),
+  layoverHub: z.enum(["non_stop", "single_layover", "multi_stop"]),
   airlineName: z.string().trim().min(1).max(160),
   flightNumber: z.string().trim().min(2).max(20).regex(/^[a-z0-9-]+$/i, "Use letters, numbers, or hyphens only"),
   ticketType: z.enum(["one_way", "round_trip"]),
@@ -70,6 +71,7 @@ function toInsertBooking(input: z.infer<typeof bookingInput>, createdBy: number)
     travelerType: input.travelerType,
     travelerCount: input.travelerCount,
     seatNumber: input.seatNumber || null,
+    layoverHub: input.layoverHub,
     airlineName: input.airlineName,
     flightNumber: input.flightNumber.toUpperCase(),
     ticketType: input.ticketType,
@@ -103,6 +105,20 @@ function toBookingFields(input: z.infer<typeof bookingInput>) {
   const { createdBy: _createdBy, ...fields } = toInsertBooking(input, 0);
   return fields;
 }
+
+const flightSearchInput = z.object({
+  from: z.string().trim().min(2).max(120),
+  to: z.string().trim().min(2).max(120),
+  date: z.string().trim().min(8).max(20),
+  travelers: z.coerce.number().int().min(1).max(9).default(1),
+});
+
+const fallbackFlights = [
+  { airline: "Bluebird Airways", flightNumber: "BB204", fromCode: "JFK", toCode: "LHR", fromName: "New York", toName: "London", departure: "08:10", arrival: "20:05", duration: "6h 55m", stops: "Non-stop", price: 737 },
+  { airline: "Bluebird Airways", flightNumber: "BB318", fromCode: "YYZ", toCode: "CDG", fromName: "Toronto", toName: "Paris", departure: "18:40", arrival: "07:20", duration: "7h 40m", stops: "Non-stop", price: 812 },
+  { airline: "Bluebird Airways", flightNumber: "BB512", fromCode: "MIA", toCode: "MAD", fromName: "Miami", toName: "Madrid", departure: "21:25", arrival: "11:10", duration: "8h 45m", stops: "Non-stop", price: 684 },
+  { airline: "Bluebird Airways", flightNumber: "BB740", fromCode: "LAX", toCode: "AMS", fromName: "Los Angeles", toName: "Amsterdam", departure: "16:15", arrival: "12:35", duration: "11h 20m", stops: "Single layover", price: 905 },
+];
 
 export const appRouter = router({
   system: systemRouter,
@@ -150,6 +166,36 @@ export const appRouter = router({
         }
         throw error;
       }
+    }),
+  }),
+  flights: router({
+    search: publicProcedure.input(flightSearchInput).query(async ({ input }) => {
+      const apiKey = process.env.AVIATIONSTACK_API_KEY;
+      const from = input.from.toUpperCase();
+      const to = input.to.toUpperCase();
+      if (apiKey && /^[A-Z]{3}$/.test(from) && /^[A-Z]{3}$/.test(to)) {
+        try {
+          const response = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${encodeURIComponent(apiKey)}&dep_iata=${from}&arr_iata=${to}&flight_date=${encodeURIComponent(input.date)}&limit=20`);
+          const payload = await response.json() as { data?: Array<any> };
+          const live = (payload.data || []).map((flight) => ({
+            airline: flight.airline?.name || "Airline",
+            flightNumber: flight.flight?.iata || flight.flight?.number || "—",
+            fromCode: flight.departure?.iata || from,
+            toCode: flight.arrival?.iata || to,
+            fromName: flight.departure?.airport || input.from,
+            toName: flight.arrival?.airport || input.to,
+            departure: flight.departure?.scheduled ? new Date(flight.departure.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—",
+            arrival: flight.arrival?.scheduled ? new Date(flight.arrival.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—",
+            duration: "Schedule available",
+            stops: "Schedule",
+            price: null,
+            live: true,
+          }));
+          if (live.length) return { source: "live" as const, flights: live };
+        } catch (error) { console.warn("[Flights] Live search unavailable, using schedule catalog", error); }
+      }
+      const matches = fallbackFlights.filter((flight) => `${flight.fromCode} ${flight.fromName}`.toLowerCase().includes(input.from.toLowerCase()) && `${flight.toCode} ${flight.toName}`.toLowerCase().includes(input.to.toLowerCase()));
+      return { source: "schedule" as const, flights: (matches.length ? matches : fallbackFlights).map((flight) => ({ ...flight, live: false })) };
     }),
   }),
 });

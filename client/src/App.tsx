@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
-import { AuthPage, BookingsPage, BookPage, DestinationsPage, SimpleInfoPage } from "./pages/PublicPages";
+import { AuthPage, BookingsPage, BookPage, DestinationsPage, FlightSearchPage, SimpleInfoPage } from "./pages/PublicPages";
 
 function Router() {
   return <Switch>
@@ -14,6 +14,7 @@ function Router() {
     <Route path="/login"><AuthPage mode="login" /></Route>
     <Route path="/signup"><AuthPage mode="signup" /></Route>
     <Route path="/bookings" component={BookingsPage} />
+    <Route path="/search-flights" component={FlightSearchPage} />
     <Route path="/book" component={BookPage} />
     <Route path="/destinations" component={DestinationsPage} />
     <Route path="/about"><SimpleInfoPage kind="about" /></Route>

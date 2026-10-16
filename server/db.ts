@@ -112,6 +112,7 @@ export function toPublicBooking(booking: Awaited<ReturnType<typeof getBookingByR
     travelerType: booking.travelerType,
     travelerCount: booking.travelerCount,
     seatNumber: booking.seatNumber,
+    layoverHub: booking.layoverHub,
     airlineName: booking.airlineName,
     flightNumber: booking.flightNumber,
     ticketType: booking.ticketType,
