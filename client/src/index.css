@@ -449,3 +449,21 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
   .hero-content { padding: 58px 0 68px; }
   .auth-card { padding: 28px 21px; }
 }
+
+/* Real travel photography and Bluebird Air-inspired homepage composition */
+.hero-section { background-image: linear-gradient(90deg, rgba(23,50,77,.95) 0%, rgba(23,50,77,.78) 44%, rgba(23,50,77,.35) 100%), url("https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1900&q=85"); background-size: cover; background-position: center 58%; }
+.hero-section::after { display: none; }
+.offer-art { background-size: cover; background-position: center; }
+.art-sunset { background-image: linear-gradient(145deg, rgba(23,50,77,.2), rgba(23,50,77,.62)), url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"); }
+.art-atlas { background-image: linear-gradient(145deg, rgba(23,50,77,.12), rgba(23,50,77,.65)), url("https://images.unsplash.com/photo-1523731407965-2430cd12f5e4?auto=format&fit=crop&w=900&q=82"); }
+.art-tropical { background-image: linear-gradient(145deg, rgba(23,50,77,.12), rgba(23,50,77,.65)), url("https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=900&q=82"); }
+.newsletter-section { color: #fff; background: #244e6b; }
+.newsletter-inner { display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 70px; padding-top: 62px; padding-bottom: 62px; }
+.newsletter-inner h2 { margin: 14px 0 10px; color: #fff; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 4vw, 3.15rem); font-weight: 500; letter-spacing: -.045em; line-height: 1.02; }
+.newsletter-inner p { max-width: 470px; margin: 0; color: #d8e4e7; line-height: 1.7; }
+.newsletter-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.newsletter-form input { min-width: 0; border: 1px solid rgba(255,255,255,.38); border-radius: 6px; padding: 13px 14px; color: var(--ink); background: #fffdf9; outline: none; }
+.newsletter-form .primary-button { border-color: var(--cream); background: var(--cream); color: #243b4c; }
+.newsletter-form .primary-button:hover { background: #d5b77f; }
+.newsletter-form small { grid-column: 1 / -1; color: #bcd0d5; font-size: .7rem; }
+@media (max-width: 760px) { .newsletter-inner { grid-template-columns: 1fr; gap: 26px; padding-top: 48px; padding-bottom: 48px; } .newsletter-form { grid-template-columns: 1fr; } .newsletter-form small { grid-column: auto; } }

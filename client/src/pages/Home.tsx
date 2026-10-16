@@ -34,8 +34,8 @@ export default function Home() {
         <div className="hero-glow hero-glow-two" />
         <div className="page-wrap hero-content">
           <div className="eyebrow light-eyebrow"><span className="eyebrow-line" /> BLUEBIRD AIRWAYS</div>
-          <h1>Your next horizon<br /><span>starts here.</span></h1>
-          <p className="hero-copy">Thoughtfully connected journeys, owner-managed with care. Find your route and keep every flight detail within reach.</p>
+          <h1>Fly further.<br /><span>Feel closer.</span></h1>
+          <p className="hero-copy">Book direct flights, keep your itinerary close, and discover the places that make the journey worthwhile.</p>
           <div className="hero-links">
             <Link href="/bookings" className="text-link light-link">Find my booking <ArrowRight size={16} /></Link>
             <Link href="/destinations" className="text-link light-link">Explore destinations <ChevronRight size={16} /></Link>
@@ -55,7 +55,7 @@ export default function Home() {
               <label className="field field-passengers"><span>Passengers</span><select defaultValue="1"><option>1 traveler</option><option>2 travelers</option><option>3 travelers</option><option>4+ travelers</option></select></label>
               <button className="primary-button search-button" type="submit"><Search size={18} /> Search flights</button>
             </div>
-            <p className="search-note"><Sparkles size={14} /> Search is your starting point. Final tickets are created and maintained in the owner console.</p>
+            <p className="search-note"><Sparkles size={14} /> Search a route, then keep every booking detail in one clear place.</p>
           </form>
         </div>
       </section>
@@ -77,10 +77,10 @@ export default function Home() {
           <div className="page-wrap section-block">
             <div className="section-heading centered-heading"><div className="eyebrow"><span className="eyebrow-line" /> THE BLUEBIRD PROMISE</div><h2>Clear details. Calmer travel.</h2><p>Everything you need, from the first search to the booking reference in your hand.</p></div>
             <div className="promise-grid">
-              <div className="promise-item"><span className="promise-icon"><ShieldCheck size={22} /></span><h3>Owner-managed care</h3><p>Each ticket is created and maintained with a human eye on the details.</p></div>
-              <div className="promise-item"><span className="promise-icon"><TicketCheck size={22} /></span><h3>One clear reference</h3><p>Find your itinerary anytime with the booking reference you receive.</p></div>
-              <div className="promise-item"><span className="promise-icon"><Headphones size={22} /></span><h3>Here when you need us</h3><p>Questions about a route, time, or payment status? Start in the Help Centre.</p></div>
-              <div className="promise-item"><span className="promise-icon"><Globe2 size={22} /></span><h3>Routes without borders</h3><p>City, state, and country fields support journeys all over the world.</p></div>
+              <div className="promise-item"><span className="promise-icon"><ShieldCheck size={22} /></span><h3>Direct flights</h3><p>Simple connections from the places you know to the places you want to discover.</p></div>
+              <div className="promise-item"><span className="promise-icon"><TicketCheck size={22} /></span><h3>Clear booking details</h3><p>Find your itinerary anytime with the booking reference you receive.</p></div>
+              <div className="promise-item"><span className="promise-icon"><Headphones size={22} /></span><h3>Travel your way</h3><p>Choose the route and ticket details that fit the way you want to travel.</p></div>
+              <div className="promise-item"><span className="promise-icon"><Globe2 size={22} /></span><h3>European horizons</h3><p>Discover cities, islands, and familiar gateways across a growing map.</p></div>
             </div>
           </div>
         </section>
@@ -97,6 +97,13 @@ export default function Home() {
             <Link href="/bookings" className="quick-card"><span className="quick-number">02</span><span className="quick-icon"><CalendarCheck size={22} /></span><strong>Manage booking</strong><small>Look up departure, arrival, and payment details.</small><ArrowRight size={17} /></Link>
             <Link href="/help" className="quick-card"><span className="quick-number">03</span><span className="quick-icon"><CheckCircle2 size={22} /></span><strong>Check-in & help</strong><small>Get answers before the day of departure.</small><ArrowRight size={17} /></Link>
             <Link href="/destinations" className="quick-card"><span className="quick-number">04</span><span className="quick-icon"><MapPin size={22} /></span><strong>Destinations</strong><small>Browse the countries and cities in the Bluebird map.</small><ArrowRight size={17} /></Link>
+          </div>
+        </section>
+
+        <section className="newsletter-section">
+          <div className="page-wrap newsletter-inner">
+            <div><div className="eyebrow light-eyebrow"><span className="eyebrow-line" /> BE THE FIRST TO KNOW</div><h2>Good routes, sent occasionally.</h2><p>Get new destinations, seasonal offers, and useful travel updates from Bluebird Airways.</p></div>
+            <form className="newsletter-form" onSubmit={(event) => event.preventDefault()}><input type="email" placeholder="Your email address" aria-label="Email address" required /><button className="primary-button" type="submit">Subscribe <ArrowRight size={16} /></button><small>By subscribing, you agree to receive Bluebird travel updates.</small></form>
           </div>
         </section>
       </main>
