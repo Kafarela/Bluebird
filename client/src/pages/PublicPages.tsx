@@ -97,7 +97,7 @@ export function FlightSearchPage() {
 
 export function PlanRoutePage() {
   const [location] = useLocation();
-  const params = useMemo(() => new URLSearchParams(location.split("?")[1] || ""), [location]);
+  const params = useMemo(() => new URLSearchParams(typeof window !== "undefined" ? window.location.search : location.split("?")[1] || ""), [location]);
   const from = params.get("from") || "your departure city";
   const to = params.get("to") || "your destination";
   const date = params.get("date") || "your preferred date";
