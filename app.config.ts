@@ -1,3 +1,3 @@
 export default {
-  logoUrl: "https://cdn.simpleicons.org/airplane/19458C",
+  logoUrl: "https://bluebirdairways.up.railway.app/brand/bluebird-logo.png",
 };
