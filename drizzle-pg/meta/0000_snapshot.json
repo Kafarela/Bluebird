@@ -1,0 +1,399 @@
+{
+  "id": "b55f0675-13e8-4019-96c1-c747fab1bb0b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.flight_bookings": {
+      "name": "flight_bookings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bookingReference": {
+          "name": "bookingReference",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "travelerName": {
+          "name": "travelerName",
+          "type": "varchar(180)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "travelerEmail": {
+          "name": "travelerEmail",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "travelerPhone": {
+          "name": "travelerPhone",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "travelerType": {
+          "name": "travelerType",
+          "type": "traveler_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "travelerCount": {
+          "name": "travelerCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seatNumber": {
+          "name": "seatNumber",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "layoverHub": {
+          "name": "layoverHub",
+          "type": "layover_hub",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "airlineName": {
+          "name": "airlineName",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "airlineLogoUrl": {
+          "name": "airlineLogoUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flightNumber": {
+          "name": "flightNumber",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ticketType": {
+          "name": "ticketType",
+          "type": "ticket_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flightClass": {
+          "name": "flightClass",
+          "type": "flight_class",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departureCity": {
+          "name": "departureCity",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "departureState": {
+          "name": "departureState",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departureCountry": {
+          "name": "departureCountry",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "departureAirport": {
+          "name": "departureAirport",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departureTerminal": {
+          "name": "departureTerminal",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivalCity": {
+          "name": "arrivalCity",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrivalState": {
+          "name": "arrivalState",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivalCountry": {
+          "name": "arrivalCountry",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrivalAirport": {
+          "name": "arrivalAirport",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivalTerminal": {
+          "name": "arrivalTerminal",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "departureAt": {
+          "name": "departureAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrivalAt": {
+          "name": "arrivalAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "totalTravelTime": {
+          "name": "totalTravelTime",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "totalMiles": {
+          "name": "totalMiles",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ticketStatus": {
+          "name": "ticketStatus",
+          "type": "ticket_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eTicketNumber": {
+          "name": "eTicketNumber",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bookingAt": {
+          "name": "bookingAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amountDue": {
+          "name": "amountDue",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.00'"
+        },
+        "amountPaid": {
+          "name": "amountPaid",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.00'"
+        },
+        "paymentStatus": {
+          "name": "paymentStatus",
+          "type": "payment_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unpaid'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "flight_bookings_bookingReference_unique": {
+          "name": "flight_bookings_bookingReference_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bookingReference"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.owner_claims": {
+      "name": "owner_claims",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ownerUserId": {
+          "name": "ownerUserId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claimedAt": {
+          "name": "claimedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "owner_claims_ownerUserId_unique": {
+          "name": "owner_claims_ownerUserId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ownerUserId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "openId": {
+          "name": "openId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loginMethod": {
+          "name": "loginMethod",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lastSignedIn": {
+          "name": "lastSignedIn",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_openId_unique": {
+          "name": "users_openId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "openId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

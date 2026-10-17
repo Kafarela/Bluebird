@@ -1,16 +1,23 @@
+import { Pool } from "pg";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { flightBookings, InsertFlightBooking, InsertUser, ownerClaims, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
+let _pool: Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+      });
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
+      _pool = null;
       _db = null;
     }
   }
@@ -46,7 +53,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({
+    target: users.openId,
+    set: updateSet,
+  });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -75,11 +85,9 @@ export async function claimOwner(openId: string) {
     throw new Error("Owner access is reserved for the configured project owner.");
   }
   try {
-    // A fixed primary key makes the first insert the single winner even if
-    // two authenticated accounts try to claim owner access at the same time.
     await db.insert(ownerClaims).values({ id: 1, ownerUserId: currentUser.id });
   } catch (error) {
-    if (String(error).toLowerCase().includes("duplicate")) {
+    if (String(error).toLowerCase().includes("duplicate") || String(error).toLowerCase().includes("unique")) {
       throw new Error("Owner access has already been claimed.");
     }
     throw error;
@@ -153,14 +161,14 @@ export function toPublicBooking(booking: Awaited<ReturnType<typeof getBookingByR
 export async function createBooking(booking: InsertFlightBooking) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
-  const result = await db.insert(flightBookings).values(booking);
+  await db.insert(flightBookings).values(booking);
   return getBookingByReference(booking.bookingReference);
 }
 
 export async function updateBooking(id: number, booking: Partial<InsertFlightBooking>) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
-  await db.update(flightBookings).set(booking).where(eq(flightBookings.id, id));
+  await db.update(flightBookings).set({ ...booking, updatedAt: new Date() }).where(eq(flightBookings.id, id));
   const result = await db.select().from(flightBookings).where(eq(flightBookings.id, id)).limit(1);
   return result[0] ?? null;
 }
