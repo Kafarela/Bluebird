@@ -20,7 +20,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     <div className="site-root">
       <header className="site-header">
         <div className="page-wrap header-inner">
-          <Link href="/" className="brand" aria-label="Bluebird Airways home"><img className="brand-logo" src="/brand/bluebird-logo.png" alt="Bluebird Airways" /></Link>
+          <Link href="/" className="brand header-brand" aria-label="Bluebird Airways home"><span className="header-wordmark">BLUEBIRD <em>AIRWAYS</em></span><img className="brand-mark-image" src="/brand/bluebird-mark.png" alt="" /></Link>
           <nav className="main-nav" aria-label="Primary navigation">
             <Link href="/book">Book a flight</Link>
             <Link href="/search-flights">Search flights</Link>
