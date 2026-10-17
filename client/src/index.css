@@ -490,11 +490,11 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 
 /* Brand watermark for plain content pages; ticket imagery remains on its own opaque card. */
 .site-root { position: relative; isolation: isolate; }
-.site-root::before { content: ""; position: fixed; z-index: 0; top: 210px; right: -76px; width: 430px; height: 430px; pointer-events: none; opacity: .055; background: url("/brand/bluebird-mark.png") center / contain no-repeat; filter: saturate(.9); }
+.site-root::before { content: ""; position: fixed; z-index: 0; top: 210px; right: -76px; width: 430px; height: 430px; pointer-events: none; opacity: .105; background: url("/brand/bluebird-mark.png") center / contain no-repeat; filter: saturate(.9); }
 .site-root > * { position: relative; z-index: 1; }
 @media (max-width: 560px) {
   .header-inner { min-height: 82px; }
   .header-wordmark { font-size: .96rem; }
   .brand-mark-image { width: 50px; height: 50px; }
-  .site-root::before { top: 164px; right: -108px; width: 330px; height: 330px; opacity: .035; }
+  .site-root::before { top: 164px; right: -108px; width: 330px; height: 330px; opacity: .075; }
 }
