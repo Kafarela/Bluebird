@@ -74,3 +74,25 @@ export const ownerClaims = pgTable("owner_claims", {
   ownerUserId: integer("ownerUserId").notNull().unique(),
   claimedAt: timestamp("claimedAt").defaultNow().notNull(),
 });
+
+export const flightSchedules = pgTable("flight_schedules", {
+  id: serial("id").primaryKey(),
+  airline: varchar("airline", { length: 160 }).notNull(),
+  flightNumber: varchar("flightNumber", { length: 20 }).notNull(),
+  fromCode: varchar("fromCode", { length: 8 }).notNull(),
+  toCode: varchar("toCode", { length: 8 }).notNull(),
+  fromName: varchar("fromName", { length: 160 }).notNull(),
+  toName: varchar("toName", { length: 160 }).notNull(),
+  departure: varchar("departure", { length: 20 }).notNull(),
+  arrival: varchar("arrival", { length: 20 }).notNull(),
+  duration: varchar("duration", { length: 80 }).notNull(),
+  stops: varchar("stops", { length: 80 }).notNull().default("Non-stop"),
+  price: numeric("price", { precision: 12, scale: 2 }),
+  active: integer("active").notNull().default(1),
+  createdBy: integer("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type FlightSchedule = typeof flightSchedules.$inferSelect;
+export type InsertFlightSchedule = typeof flightSchedules.$inferInsert;

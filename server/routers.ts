@@ -153,6 +153,32 @@ const flightSearchInput = z.object({
   travelers: z.coerce.number().int().min(1).max(9).default(1),
 });
 
+const flightScheduleInput = z.object({
+  airline: z.string().trim().min(1).max(160),
+  flightNumber: z.string().trim().min(2).max(20).regex(/^[a-z0-9-]+$/i),
+  fromCode: z.string().trim().min(2).max(8),
+  toCode: z.string().trim().min(2).max(8),
+  fromName: z.string().trim().min(1).max(160),
+  toName: z.string().trim().min(1).max(160),
+  departure: z.string().trim().min(1).max(20),
+  arrival: z.string().trim().min(1).max(20),
+  duration: z.string().trim().min(1).max(80),
+  stops: z.string().trim().min(1).max(80),
+  price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Enter a valid price").or(z.literal("")),
+  active: z.boolean(),
+});
+
+function toScheduleFields(input: z.infer<typeof flightScheduleInput>, createdBy?: number) {
+  return {
+    airline: input.airline, flightNumber: input.flightNumber.toUpperCase(),
+    fromCode: input.fromCode.toUpperCase(), toCode: input.toCode.toUpperCase(),
+    fromName: input.fromName, toName: input.toName, departure: input.departure,
+    arrival: input.arrival, duration: input.duration, stops: input.stops,
+    price: input.price || null, active: input.active ? 1 : 0,
+    ...(createdBy ? { createdBy } : {}),
+  };
+}
+
 const fallbackFlights = [
   { airline: "Bluebird Airways", flightNumber: "BB204", fromCode: "JFK", toCode: "LHR", fromName: "New York", toName: "London", departure: "08:10", arrival: "20:05", duration: "6h 55m", stops: "Non-stop", price: 737 },
   { airline: "British Airways", flightNumber: "BA178", fromCode: "JFK", toCode: "LHR", fromName: "New York", toName: "London", departure: "21:30", arrival: "09:25", duration: "6h 55m", stops: "Non-stop", price: 812 },
@@ -243,6 +269,12 @@ export const appRouter = router({
       return { sent: true as const, email: booking.travelerEmail };
     }),
   }),
+  schedules: router({
+    adminList: adminProcedure.query(() => db.listFlightSchedules()),
+    adminCreate: adminProcedure.input(flightScheduleInput).mutation(({ input, ctx }) => db.createFlightSchedule({ ...toScheduleFields(input), createdBy: ctx.user.id })),
+    adminUpdate: adminProcedure.input(z.object({ id: z.number().int().positive(), data: flightScheduleInput })).mutation(({ input }) => db.updateFlightSchedule(input.id, toScheduleFields(input.data))),
+    adminDelete: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => db.deleteFlightSchedule(input.id)),
+  }),
   flights: router({
     search: publicProcedure.input(flightSearchInput).query(async ({ input }) => {
       const apiKey = process.env.AVIATIONSTACK_API_KEY;
@@ -269,7 +301,9 @@ export const appRouter = router({
           if (live.length) return { source: "live" as const, flights: live };
         } catch (error) { console.warn("[Flights] Live search unavailable, using schedule catalog", error); }
       }
-      const matches = fallbackFlights.filter((flight) => `${flight.fromCode} ${flight.fromName}`.toLowerCase().includes(input.from.toLowerCase()) && `${flight.toCode} ${flight.toName}`.toLowerCase().includes(input.to.toLowerCase()));
+      const savedSchedules = await db.searchFlightSchedules(input.from, input.to);
+      const catalogFlights = savedSchedules.map((flight) => ({ ...flight, price: flight.price === null ? null : Number(flight.price), live: false }));
+      const matches = catalogFlights.length ? catalogFlights : fallbackFlights.filter((flight) => `${flight.fromCode} ${flight.fromName}`.toLowerCase().includes(input.from.toLowerCase()) && `${flight.toCode} ${flight.toName}`.toLowerCase().includes(input.to.toLowerCase()));
       return { source: "schedule" as const, flights: (matches.length ? matches : fallbackFlights).map((flight) => ({ ...flight, live: false })) };
     }),
   }),

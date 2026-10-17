@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { flightBookings, InsertFlightBooking, InsertUser, ownerClaims, users } from "../drizzle/schema";
+import { flightBookings, flightSchedules, InsertFlightBooking, InsertFlightSchedule, InsertUser, ownerClaims, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _pool: Pool | null = null;
@@ -199,4 +199,43 @@ export async function countBookings() {
   if (!db) return 0;
   const result = await db.select({ count: sql<number>`count(*)` }).from(flightBookings);
   return Number(result[0]?.count ?? 0);
+}
+
+export async function listFlightSchedules() {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  return db.select().from(flightSchedules).orderBy(desc(flightSchedules.updatedAt));
+}
+
+export async function searchFlightSchedules(from: string, to: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const fromTerm = `%${from.toLowerCase()}%`;
+  const toTerm = `%${to.toLowerCase()}%`;
+  return db.select().from(flightSchedules).where(and(
+    eq(flightSchedules.active, 1),
+    sql`lower(${flightSchedules.fromCode} || ' ' || ${flightSchedules.fromName}) like ${fromTerm}`,
+    sql`lower(${flightSchedules.toCode} || ' ' || ${flightSchedules.toName}) like ${toTerm}`,
+  )).orderBy(flightSchedules.price);
+}
+
+export async function createFlightSchedule(schedule: InsertFlightSchedule) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(flightSchedules).values(schedule).returning();
+  return result[0];
+}
+
+export async function updateFlightSchedule(id: number, schedule: Partial<InsertFlightSchedule>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.update(flightSchedules).set({ ...schedule, updatedAt: new Date() }).where(eq(flightSchedules.id, id)).returning();
+  return result[0] ?? null;
+}
+
+export async function deleteFlightSchedule(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(flightSchedules).where(eq(flightSchedules.id, id));
+  return { success: true as const };
 }

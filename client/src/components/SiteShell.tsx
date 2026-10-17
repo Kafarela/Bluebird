@@ -3,7 +3,7 @@ import { LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-export function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({ children, watermark = true }: { children: ReactNode; watermark?: boolean }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
 
@@ -17,7 +17,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="site-root">
+    <div className={`site-root${watermark ? "" : " site-root-no-watermark"}`}>
       <header className="site-header">
         <div className="page-wrap header-inner">
           <Link href="/" className="brand header-brand" aria-label="Bluebird Airways home"><span className="header-wordmark">BLUEBIRD <em>AIRWAYS</em></span><img className="brand-mark-image" src="/brand/bluebird-mark.png" alt="" /></Link>

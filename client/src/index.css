@@ -490,11 +490,48 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 
 /* Brand watermark for plain content pages; ticket imagery remains on its own opaque card. */
 .site-root { position: relative; isolation: isolate; }
-.site-root::before { content: ""; position: fixed; z-index: 0; top: 210px; right: -76px; width: 430px; height: 430px; pointer-events: none; opacity: .105; background: url("/brand/bluebird-mark.png") center / contain no-repeat; filter: saturate(.9); }
+.site-root::before { content: ""; position: fixed; z-index: 0; top: 210px; right: -76px; width: 430px; height: 430px; pointer-events: none; opacity: .055; background: url("/brand/bluebird-mark.png") center / contain no-repeat; filter: saturate(.9); }
 .site-root > * { position: relative; z-index: 1; }
 @media (max-width: 560px) {
   .header-inner { min-height: 82px; }
   .header-wordmark { font-size: .96rem; }
   .brand-mark-image { width: 50px; height: 50px; }
-  .site-root::before { top: 164px; right: -108px; width: 330px; height: 330px; opacity: .075; }
+  .site-root::before { top: 164px; right: -108px; width: 330px; height: 330px; opacity: .035; }
 }
+
+/* Plan Route and owner schedule management */
+.plan-route-layout { display: grid; grid-template-columns: 1.5fr .8fr; gap: 20px; align-items: start; }
+.plan-route-card, .plan-route-aside, .schedule-manager { padding: 30px; border: 1px solid #e0e6ef; border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: var(--shadow); }
+.plan-route-card h2 { max-width: 680px; margin: 5px 0 25px; color: var(--navy); font-size: clamp(1.7rem, 3.2vw, 2.65rem); letter-spacing: -.055em; }
+.plan-route-card h2 span { color: var(--blue-2); font-weight: 350; }
+.route-request-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin-bottom: 25px; border-top: 1px solid #e1e8f1; border-bottom: 1px solid #e1e8f1; }
+.route-request-meta div { padding: 16px 13px; border-left: 1px solid #e1e8f1; }
+.route-request-meta div:first-child { padding-left: 0; border-left: 0; }
+.route-request-meta span { display: block; color: #8793a5; font-size: .64rem; font-weight: 800; letter-spacing: .08em; }
+.route-request-meta strong { display: block; margin-top: 5px; color: var(--navy); font-size: .9rem; }
+.plan-route-copy { max-width: 620px; color: #69778d; font-size: .94rem; line-height: 1.75; }
+.plan-route-email { margin-top: 12px; }
+.contact-email { margin: 17px 0 0; color: #748198; font-size: .8rem; }
+.contact-email a { color: var(--blue); font-weight: 750; }
+.plan-route-aside { background: #eaf0f8; box-shadow: none; }
+.plan-route-aside h3 { color: var(--navy); font-size: 1.25rem; margin: 0 0 9px; }
+.plan-route-aside p:not(.card-kicker) { color: #69778d; font-size: .86rem; line-height: 1.7; }
+.schedule-manager { margin-bottom: 20px; }
+.schedule-manager .form-card-heading h2 { display: flex; align-items: center; gap: 8px; }
+.schedule-manager-copy { margin: 4px 0 0; color: #748198; font-size: .78rem; }
+.schedule-form { margin-top: 20px; padding-top: 18px; border-top: 1px solid #e1e8f1; }
+.schedule-active { justify-content: flex-start; }
+.check-field { display: flex; align-items: center; gap: 8px; min-height: 43px; color: #596a82; font-size: .8rem; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.check-field input { width: 17px; height: 17px; accent-color: var(--blue); }
+.schedule-list { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+.schedule-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; align-items: center; gap: 12px; padding: 13px 15px; border: 1px solid #e1e7f0; border-radius: 9px; background: #fbfcfe; }
+.schedule-row strong, .schedule-row span { display: block; }
+.schedule-row strong { color: var(--navy); font-size: .84rem; }
+.schedule-row span { margin-top: 3px; color: #75839a; font-size: .73rem; }
+.schedule-row-price { color: var(--navy); font-size: .84rem; font-weight: 800; text-align: right; }
+.schedule-row-price small { display: block; margin-top: 3px; color: var(--green); font-size: .64rem; font-weight: 700; }
+.site-root-no-watermark::before { display: none; }
+.bookings-page { min-height: 520px; background-position: center; background-size: cover; border-radius: 18px; }
+.bookings-page .lookup-card, .bookings-page .empty-state { background: rgba(255,255,255,.96); }
+@media (max-width: 820px) { .plan-route-layout { grid-template-columns: 1fr; }.schedule-row { grid-template-columns: minmax(0,1fr) auto; }.schedule-row .edit-row-button, .schedule-row .icon-button { justify-self: start; }.schedule-row-price { text-align: right; } }
+@media (max-width: 560px) { .plan-route-card, .plan-route-aside, .schedule-manager { padding: 21px; }.route-request-meta { grid-template-columns: 1fr; gap: 0; }.route-request-meta div, .route-request-meta div:first-child { padding: 12px 0; border-left: 0; border-bottom: 1px solid #e1e8f1; }.route-request-meta div:last-child { border-bottom: 0; }.plan-route-email { width: 100%; text-align: center; }.bookings-page { min-height: 590px; margin-left: -12px; margin-right: -12px; border-radius: 0; }.schedule-row { grid-template-columns: 1fr; }.schedule-row-price { text-align: left; }.schedule-row .edit-row-button, .schedule-row .icon-button { justify-self: start; } }
