@@ -4,8 +4,10 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_
 import { systemRouter } from "./_core/systemRouter";
 import * as db from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import PDFDocument from "pdfkit";
+import { hashPassword, normalizeEmail, verifyPassword } from "./_core/password";
+import { sdk } from "./_core/sdk";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -131,6 +133,19 @@ async function createTicketPdf(booking: Awaited<ReturnType<typeof db.getBookingB
   return done;
 }
 
+const authEmail = z.string().trim().email().max(320).transform(normalizeEmail);
+const authPassword = z.string().min(8, "Password must be at least 8 characters").max(200);
+
+async function startLocalSession(ctx: { req: any; res: any }, user: NonNullable<Awaited<ReturnType<typeof db.getUserByEmail>>>) {
+  const sessionToken = await sdk.createSessionToken(user.openId, {
+    name: user.name || user.email || "Bluebird traveler",
+    expiresInMs: ONE_YEAR_MS,
+  });
+  const cookieOptions = getSessionCookieOptions(ctx.req);
+  ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+  return user;
+}
+
 const flightSearchInput = z.object({
   from: z.string().trim().min(2).max(120),
   to: z.string().trim().min(2).max(120),
@@ -152,6 +167,27 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    signup: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(120), email: authEmail, password: authPassword })).mutation(async ({ input, ctx }) => {
+      const existing = await db.getUserByEmail(input.email);
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "An account with that email already exists. Please log in instead." });
+      try {
+        const user = await db.createLocalUser({ email: input.email, name: input.name, passwordHash: await hashPassword(input.password) });
+        return startLocalSession(ctx, user);
+      } catch (error) {
+        if (String(error).toLowerCase().includes("duplicate") || String(error).toLowerCase().includes("unique")) {
+          throw new TRPCError({ code: "CONFLICT", message: "An account with that email already exists. Please log in instead." });
+        }
+        throw error;
+      }
+    }),
+    login: publicProcedure.input(z.object({ email: authEmail, password: z.string().min(1).max(200) })).mutation(async ({ input, ctx }) => {
+      const user = await db.getUserByEmail(input.email);
+      if (!user?.passwordHash || !(await verifyPassword(input.password, user.passwordHash))) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Email or password is incorrect." });
+      }
+      await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
+      return startLocalSession(ctx, { ...user, lastSignedIn: new Date() });
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

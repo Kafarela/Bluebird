@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export function SiteShell({ children }: { children: ReactNode }) {
