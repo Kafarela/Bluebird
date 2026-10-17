@@ -114,11 +114,18 @@ export function PlanRoutePage() {
 export function BookPage() {
   const [location, navigate] = useLocation();
   const params = useMemo(() => new URLSearchParams(location.split("?")[1] || ""), [location]);
+  const [fullName, setFullName] = useState("");
+  const [gender, setGender] = useState("");
+  const [phone, setPhone] = useState("");
+  const [passengerType, setPassengerType] = useState("Adult");
+  const [passengers, setPassengers] = useState("1");
+  const [passengerDetails, setPassengerDetails] = useState([{ fullName: "", gender: "" }]);
+  const [layoverHub, setLayoverHub] = useState("Non-Stop");
   const [from, setFrom] = useState(params.get("from") || "");
-  const [to, setTo] = useState(params.get("to") || "");
+  const [to, setTo] = useState(params.get("to") || "Los Angeles, CA");
   const [depart, setDepart] = useState("");
   const [returnDate, setReturnDate] = useState("");
-  const [passengers, setPassengers] = useState("1");
+  const [flightType, setFlightType] = useState("One Way");
   const [travelClass, setTravelClass] = useState("Show all");
   const [currentLocation, setCurrentLocation] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
@@ -142,18 +149,22 @@ export function BookPage() {
 
   useEffect(() => { void detectCurrentLocation(); }, []);
 
+  const updatePassengerCount = (value: string) => {
+    setPassengers(value);
+    const count = Number(value);
+    setPassengerDetails((current) => Array.from({ length: count }, (_, index) => current[index] || { fullName: "", gender: "" }));
+  };
+
+  const updatePassenger = (index: number, key: "fullName" | "gender", value: string) => {
+    setPassengerDetails((current) => current.map((passenger, passengerIndex) => passengerIndex === index ? { ...passenger, [key]: value } : passenger));
+  };
+
   const searchFlights = () => {
-    const searchParams = new URLSearchParams({
-      from,
-      to,
-      date: depart,
-      travelers: passengers,
-      class: travelClass,
-    });
+    const searchParams = new URLSearchParams({ from, to, date: depart, travelers: passengers, class: travelClass, flightType, layoverHub, returnDate });
     navigate(`/search-flights?${searchParams.toString()}`);
   };
 
-  return <SiteShell><PageIntro eyebrow="BOOK A FLIGHT" title="Plan the route. We’ll keep the details clear." copy="Choose your current location, destination, dates, travelers, and cabin class. We’ll take you to available flight results." /><main className="page-wrap section-block book-page-content"><section className="planner-card booking-planner-card"><div className="planner-top"><div><p className="card-kicker">FLIGHT PLANNER</p><h2>Book a flight</h2></div><span className="planner-badge"><Globe2 size={15} /> Worldwide routes</span></div><div className="booking-form-grid"><label className="field"><span>From</span><input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Use current city and state" /><button type="button" className="field-location-button" onClick={() => void detectCurrentLocation()}>{locationLoading ? "Finding current location…" : "Use current location"}</button></label><label className="field"><span>To</span><input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Use current location for destination" /><button type="button" className="field-location-button" onClick={() => setTo(currentLocation || from || "Current location")}>Use current location</button></label><label className="field"><span>Depart</span><input type="date" value={depart} onChange={(e) => setDepart(e.target.value)} aria-label="Departure date in month, day, year format" /><button type="button" className="field-location-button calendar-button" onClick={(e) => { const input = e.currentTarget.previousElementSibling as HTMLInputElement | null; input?.showPicker?.(); }}>View Calendar</button></label><label className="field"><span>Return</span><input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} aria-label="Return date in month, day, year format" /><button type="button" className="field-location-button calendar-button" onClick={(e) => { const input = e.currentTarget.previousElementSibling as HTMLInputElement | null; input?.showPicker?.(); }}>View Calendar</button></label><label className="field"><span>Passenger</span><select value={passengers} onChange={(e) => setPassengers(e.target.value)}>{Array.from({ length: 9 }, (_, index) => <option key={index + 1} value={String(index + 1)}>{index + 1}</option>)}</select></label><label className="field"><span>Class</span><select value={travelClass} onChange={(e) => setTravelClass(e.target.value)}><option>Show all</option><option>Economy</option><option>Business Class</option><option>First Class</option></select></label></div><div className="booking-form-footer"><p>We’ll use your route details to show matching schedules and fares.</p><button type="button" className="primary-button" onClick={searchFlights}><Search size={17} /> Book a flight</button></div></section></main></SiteShell>;
+  return <SiteShell><PageIntro eyebrow="BOOK A FLIGHT" title="Plan the route. We’ll keep the details clear." copy="Add traveler details, choose your route and dates, then review matching flight schedules." /><main className="page-wrap section-block book-page-content"><form className="planner-card booking-planner-card" onSubmit={(event) => { event.preventDefault(); searchFlights(); }}><div className="planner-top"><div><p className="card-kicker">FLIGHT PLANNER</p><h2>Book a flight</h2></div><span className="planner-badge"><Globe2 size={15} /> Worldwide routes</span></div><div className="booking-form-grid traveler-primary-grid"><label className="field"><span>Full Name</span><input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" required /></label><label className="field"><span>Gender</span><select value={gender} onChange={(e) => setGender(e.target.value)} required><option value="">Select</option><option value="M">M</option><option value="F">F</option></select></label><label className="field"><span>Phone number</span><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" required /></label><label className="field"><span>Passenger</span><select value={passengerType} onChange={(e) => setPassengerType(e.target.value)}><option>Adult</option><option>Youth</option><option>Teenager</option><option>Adult&Kids</option></select></label><label className="field"><span>Number of Passengers</span><select value={passengers} onChange={(e) => updatePassengerCount(e.target.value)}>{Array.from({ length: 9 }, (_, index) => <option key={index + 1} value={String(index + 1)}>{index + 1}</option>)}</select></label><label className="field"><span>Layover Hub</span><select value={layoverHub} onChange={(e) => setLayoverHub(e.target.value)}><option>Non-Stop</option><option>Single Layover</option><option>Multi-stop</option></select></label></div>{Number(passengers) > 1 && <section className="passenger-details-section"><div className="passenger-details-heading"><p className="card-kicker">ADDITIONAL PASSENGERS</p><span>Enter a full name and gender for each traveler.</span></div><div className="passenger-details-grid">{passengerDetails.slice(1).map((passenger, index) => <div className="passenger-detail-card" key={index + 1}><strong>Passenger {index + 2}</strong><label className="field"><span>Full Name</span><input value={passenger.fullName} onChange={(e) => updatePassenger(index + 1, "fullName", e.target.value)} placeholder="Full name" required /></label><label className="field"><span>Gender</span><select value={passenger.gender} onChange={(e) => updatePassenger(index + 1, "gender", e.target.value)} required><option value="">Select</option><option value="M">M</option><option value="F">F</option></select></label></div>)}</div></section>}<div className="booking-form-grid route-details-grid"><label className="field"><span>From</span><input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Use current city and state" required /><button type="button" className="field-location-button" onClick={() => void detectCurrentLocation()}>{locationLoading ? "Finding current location…" : "Use current location"}</button></label><label className="field"><span>To</span><input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Los Angeles, CA" required /><button type="button" className="field-location-button" onClick={() => setTo(currentLocation || from || "Current location")}>Use current location</button></label><label className="field"><span>Flight type</span><select value={flightType} onChange={(e) => setFlightType(e.target.value)}><option>One Way</option><option>Round Trip</option></select></label><label className="field"><span>Depart</span><input type="date" value={depart} onChange={(e) => setDepart(e.target.value)} aria-label="Departure date in month, day, year format" required /><button type="button" className="field-location-button calendar-button" onClick={(e) => { const input = e.currentTarget.previousElementSibling as HTMLInputElement | null; input?.showPicker?.(); }}>View Calendar</button></label>{flightType === "Round Trip" && <label className="field"><span>Return</span><input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} aria-label="Return date in month, day, year format" required /><button type="button" className="field-location-button calendar-button" onClick={(e) => { const input = e.currentTarget.previousElementSibling as HTMLInputElement | null; input?.showPicker?.(); }}>View Calendar</button></label>}<label className="field"><span>Class</span><select value={travelClass} onChange={(e) => setTravelClass(e.target.value)}><option>Show all</option><option>Economy</option><option>Business Class</option><option>First Class</option></select></label></div><div className="booking-form-footer"><p>Review your route and traveler details on the Search Flights page.</p><button type="submit" className="primary-button"><Search size={17} /> Book a flight</button></div></form></main></SiteShell>;
 }
 
 export function DestinationsPage() {
