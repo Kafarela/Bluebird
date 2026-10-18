@@ -64,6 +64,14 @@ function airportCode(place: FlightPlace) {
   return /^[A-Za-z]{3}$/.test(value) ? value.toUpperCase() : "";
 }
 
+function duffelLookupError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("not configured") || message.includes("api key")) {
+    return "Live Duffel airport lookup is not configured or authorized. Enter a known three-letter IATA code or contact Bluebird.";
+  }
+  return "";
+}
+
 export function FlightBookingForm({
   mode,
   onSearch,
@@ -182,8 +190,10 @@ export function FlightBookingForm({
           });
         }
       })
-      .catch(() => {
-        // Keep the origin editable when IP geolocation is unavailable.
+      .catch(error => {
+        if (cancelled) return;
+        const lookupError = duffelLookupError(error);
+        if (lookupError) setError(lookupError);
       });
     return () => {
       cancelled = true;
@@ -249,9 +259,10 @@ export function FlightBookingForm({
             label: `${nearest.cityName || nearest.name} · ${nearest.iataCode}`,
             code: nearest.iataCode,
           });
-        } catch {
+        } catch (error) {
           setError(
-            "We could not find a nearby airport. Enter a city or airport instead."
+            duffelLookupError(error) ||
+              "We could not find a nearby airport. Enter a city or airport instead."
           );
         }
       },
