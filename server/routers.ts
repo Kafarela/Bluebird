@@ -161,9 +161,17 @@ const duffelSearchInput = z.object({
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid departure date"),
   returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid return date").optional().or(z.literal("")),
   passengers: z.coerce.number().int().min(1).max(9),
+  passengerTypes: z.array(z.enum(["adult", "youth", "kid", "teenager"])).min(1).max(9).optional(),
   cabinClass: z.enum(["economy", "premium_economy", "business", "first"]),
   maxConnections: z.coerce.number().int().min(0).max(3),
+}).superRefine((value, ctx) => {
+  if (value.passengerTypes && value.passengerTypes.length !== value.passengers) ctx.addIssue({ code: "custom", path: ["passengerTypes"], message: "Passenger categories must match the selected passenger count." });
 });
+const duffelPlaceInput = z.object({
+  query: z.string().trim().min(2).max(100).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+}).refine(value => Boolean(value.query) || (value.lat !== undefined && value.lng !== undefined), "Enter a place name or current coordinates.");
 
 const flightScheduleInput = z.object({
   airline: z.string().trim().min(1).max(160),
@@ -320,6 +328,21 @@ export const appRouter = router({
     }),
   }),
   duffel: router({
+    placeSuggestions: publicProcedure.input(duffelPlaceInput).query(async ({ input }) => {
+      if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet." });
+      const params = new URLSearchParams();
+      if (input.query) params.set("query", input.query);
+      if (input.lat !== undefined && input.lng !== undefined) { params.set("lat", String(input.lat)); params.set("lng", String(input.lng)); params.set("rad", "50000"); }
+      let response: Response;
+      try {
+        response = await fetch(`https://api.duffel.com/places/suggestions?${params.toString()}`, { headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Duffel-Version": "v2" }, signal: AbortSignal.timeout(8000) });
+      } catch {
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "We could not find matching cities or airports. Please try again." });
+      }
+      const payload = await response.json() as { data?: Array<any>; errors?: Array<{ message?: string }> };
+      if (!response.ok) throw new TRPCError({ code: "BAD_GATEWAY", message: payload.errors?.[0]?.message || "Duffel could not find matching cities or airports." });
+      return (payload.data || []).slice(0, 12).map(place => ({ type: place.type === "city" ? "city" as const : "airport" as const, name: String(place.name || ""), cityName: typeof place.city_name === "string" ? place.city_name : null, iataCode: String(place.iata_code || "").toUpperCase(), iataCityCode: typeof place.iata_city_code === "string" ? place.iata_city_code : null, countryCode: String(place.iata_country_code || "") })).filter(place => /^[A-Z]{3}$/.test(place.iataCode));
+    }),
     search: publicProcedure.input(duffelSearchInput).query(async ({ input }) => {
       if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet. Add DUFFEL_API_KEY to the Railway service variables." });
       const origin = input.origin.trim().toUpperCase();
@@ -329,7 +352,7 @@ export const appRouter = router({
       const response = await fetch("https://api.duffel.com/air/offer_requests?return_offers=true&view=offers", {
         method: "POST",
         headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Content-Type": "application/json", "Duffel-Version": "v2" },
-        body: JSON.stringify({ data: { slices, passengers: Array.from({ length: input.passengers }, () => ({ type: "adult" })), cabin_class: input.cabinClass, max_connections: input.maxConnections, supplier_timeout: 10000 } }),
+        body: JSON.stringify({ data: { slices, passengers: (input.passengerTypes?.length === input.passengers ? input.passengerTypes : Array.from({ length: input.passengers }, () => "adult" as const)).map(type => ({ type: type === "kid" ? "child" : "adult" })), cabin_class: input.cabinClass, max_connections: input.maxConnections, supplier_timeout: 10000 } }),
       });
       const payload = await response.json() as { data?: { id?: string; offers?: Array<any> }; errors?: Array<{ message?: string }> };
       if (!response.ok) throw new TRPCError({ code: response.status === 401 ? "UNAUTHORIZED" : "BAD_GATEWAY", message: payload.errors?.[0]?.message || "Duffel could not complete this availability search." });
@@ -366,6 +389,11 @@ export const appRouter = router({
       }
       if (!Array.isArray(providerOffer.passengers) || providerOffer.passengers.length !== input.route.passengerCount) {
         throw new TRPCError({ code: "CONFLICT", message: "The selected offer no longer matches the traveler count. Please search again." });
+      }
+      const expectedPassengerTypes = input.passengers.map(passenger => passenger.type === "kid" ? "child" : "adult").sort();
+      const providerPassengerTypes = providerOffer.passengers.map((passenger: any) => String(passenger.type || "")).sort();
+      if (providerPassengerTypes.some((type: string, index: number) => type !== expectedPassengerTypes[index])) {
+        throw new TRPCError({ code: "CONFLICT", message: "The selected airline offer does not match the traveler categories. Search again with the correct passenger details." });
       }
       const verifiedOffer = {
         id: providerOffer.id,

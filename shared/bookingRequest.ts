@@ -3,7 +3,7 @@ import { z } from "zod";
 export const requestPassengerSchema = z.object({
   fullName: z.string().trim().min(2).max(180),
   gender: z.enum(["M", "F"]),
-  type: z.enum(["adult", "kid", "teenager"]),
+  type: z.enum(["adult", "youth", "kid", "teenager"]),
 });
 
 const segmentSchema = z.object({
@@ -37,11 +37,13 @@ export const bookingRequestInputSchema = z
         .trim()
         .regex(/^[A-Za-z]{3}$/, "Use a three-letter IATA airport code")
         .transform(value => value.toUpperCase()),
+      originLabel: z.string().trim().max(180).optional(),
       destination: z
         .string()
         .trim()
         .regex(/^[A-Za-z]{3}$/, "Use a three-letter IATA airport code")
         .transform(value => value.toUpperCase()),
+      destinationLabel: z.string().trim().max(180).optional(),
       departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       returnDate: z
         .string()
@@ -49,6 +51,12 @@ export const bookingRequestInputSchema = z
         .nullable(),
       passengerCount: z.number().int().min(1).max(9),
       cabinClass: z.enum(["economy", "premium_economy", "business", "first"]),
+      passengerCategory: z
+        .enum(["adult", "youth", "teenager", "adult_kids"])
+        .optional(),
+      maxConnections: z
+        .union([z.literal(0), z.literal(1), z.literal(3)])
+        .optional(),
     }),
     selectedOffer: z.object({
       id: z
@@ -84,15 +92,19 @@ export const bookingRequestInputSchema = z
         date.toISOString().slice(0, 10) === dateValue
       );
     };
+    const earliestUtcDate = new Date();
+    // A traveler west of UTC can still be on the prior local calendar date.
+    earliestUtcDate.setUTCDate(earliestUtcDate.getUTCDate() - 1);
+    const earliestAcceptedDeparture = earliestUtcDate
+      .toISOString()
+      .slice(0, 10);
     if (!isCalendarDate(value.route.departureDate)) {
       ctx.addIssue({
         code: "custom",
         path: ["route", "departureDate"],
         message: "Enter a valid departure date.",
       });
-    } else if (
-      value.route.departureDate < new Date().toISOString().slice(0, 10)
-    ) {
+    } else if (value.route.departureDate < earliestAcceptedDeparture) {
       ctx.addIssue({
         code: "custom",
         path: ["route", "departureDate"],
@@ -111,6 +123,31 @@ export const bookingRequestInputSchema = z
         code: "custom",
         path: ["passengers"],
         message: "Passenger details must match the selected passenger count.",
+      });
+    }
+    const passengerCategory = value.route.passengerCategory;
+    if (passengerCategory === "adult_kids") {
+      if (
+        value.passengers.length < 2 ||
+        value.passengers[0]?.type !== "adult" ||
+        value.passengers.slice(1).some(passenger => passenger.type !== "kid")
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["passengers"],
+          message:
+            "Adult&Kids requires one adult followed by at least one child.",
+        });
+      }
+    } else if (
+      passengerCategory &&
+      value.passengers.some(passenger => passenger.type !== passengerCategory)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["passengers"],
+        message:
+          "Passenger details do not match the selected passenger category.",
       });
     }
     if (value.route.origin === value.route.destination) {
