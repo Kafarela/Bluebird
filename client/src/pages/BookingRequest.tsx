@@ -107,6 +107,7 @@ export default function BookingRequestPage() {
   const [passengers, setPassengers] =
     useState<BookingDraftPassenger[]>(initialPassengers);
   const [emailDraftOpened, setEmailDraftOpened] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const emailHref =
     route && offer
       ? buildBookingRequestEmailHref({
@@ -134,12 +135,17 @@ export default function BookingRequestPage() {
   };
 
   const handleEmailClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (isSubmitting) {
+      event.preventDefault();
+      return;
+    }
     const form = event.currentTarget.closest("form");
     if (form && !form.reportValidity()) {
       event.preventDefault();
       return;
     }
-    setEmailDraftOpened(true);
+    setIsSubmitting(true);
+    window.setTimeout(() => setEmailDraftOpened(true), 450);
   };
 
   return (
@@ -382,8 +388,14 @@ export default function BookingRequestPage() {
                     href={emailHref}
                     className="primary-button"
                     onClick={handleEmailClick}
+                    aria-busy={isSubmitting}
                   >
-                    <Mail size={16} /> Send Booking Request to Bluebird
+                    {isSubmitting ? (
+                      <span className="bluebird-spinner" aria-hidden="true" />
+                    ) : (
+                      <Mail size={16} />
+                    )}
+                    {isSubmitting ? "Sending request…" : "Send Booking Request to Bluebird"}
                     <ArrowRight size={16} />
                   </a>
                 </div>
