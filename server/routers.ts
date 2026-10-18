@@ -11,6 +11,7 @@ import { sdk } from "./_core/sdk";
 import { ENV } from "./_core/env";
 import { randomBytes } from "node:crypto";
 import { bookingRequestInputSchema } from "../shared/bookingRequest";
+import { buildDuffelOfferRequest, buildDuffelOfferRequestUrl } from "../shared/duffelSearch";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -329,36 +330,102 @@ export const appRouter = router({
   }),
   duffel: router({
     placeSuggestions: publicProcedure.input(duffelPlaceInput).query(async ({ input }) => {
-      if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet." });
+      if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet. Add DUFFEL_API_KEY to the Railway service variables." });
       const params = new URLSearchParams();
       if (input.query) params.set("query", input.query);
-      if (input.lat !== undefined && input.lng !== undefined) { params.set("lat", String(input.lat)); params.set("lng", String(input.lng)); params.set("rad", "50000"); }
+      if (input.lat !== undefined && input.lng !== undefined) {
+        params.set("lat", String(input.lat));
+        params.set("lng", String(input.lng));
+        params.set("rad", "50000");
+      }
       let response: Response;
       try {
-        response = await fetch(`https://api.duffel.com/places/suggestions?${params.toString()}`, { headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Duffel-Version": "v2" }, signal: AbortSignal.timeout(8000) });
-      } catch {
-        throw new TRPCError({ code: "BAD_GATEWAY", message: "We could not find matching cities or airports. Please try again." });
+        response = await fetch(`https://api.duffel.com/places/suggestions?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Duffel-Version": "v2" },
+          signal: AbortSignal.timeout(8000),
+        });
+      } catch (error) {
+        console.warn("[Duffel] Place suggestions request failed:", error instanceof Error ? error.message : "unknown error");
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "City and airport suggestions are temporarily unavailable. Please try again." });
       }
-      const payload = await response.json() as { data?: Array<any>; errors?: Array<{ message?: string }> };
-      if (!response.ok) throw new TRPCError({ code: "BAD_GATEWAY", message: payload.errors?.[0]?.message || "Duffel could not find matching cities or airports." });
-      return (payload.data || []).slice(0, 12).map(place => ({ type: place.type === "city" ? "city" as const : "airport" as const, name: String(place.name || ""), cityName: typeof place.city_name === "string" ? place.city_name : null, iataCode: String(place.iata_code || "").toUpperCase(), iataCityCode: typeof place.iata_city_code === "string" ? place.iata_city_code : null, countryCode: String(place.iata_country_code || "") })).filter(place => /^[A-Z]{3}$/.test(place.iataCode));
+      let payload: { data?: Array<any>; errors?: Array<{ message?: string }> };
+      try {
+        const body: unknown = await response.json();
+        if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("invalid response body");
+        payload = body as typeof payload;
+      } catch {
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "Duffel returned an invalid city and airport response. Please try again." });
+      }
+      if (!response.ok) {
+        const detail = (Array.isArray(payload.errors) ? payload.errors : []).map(error => error.message?.trim()).filter(Boolean).join(" ");
+        throw new TRPCError({
+          code: response.status === 401 ? "UNAUTHORIZED" : "BAD_GATEWAY",
+          message: response.status === 401 ? "Duffel rejected the configured API key. Please contact Bluebird." : detail || "Duffel could not find matching cities or airports.",
+        });
+      }
+      return (Array.isArray(payload.data) ? payload.data : []).slice(0, 12)
+        .map(place => ({
+          type: place.type === "city" ? "city" as const : "airport" as const,
+          name: String(place.name || ""),
+          cityName: typeof place.city_name === "string" ? place.city_name : null,
+          iataCode: String(place.iata_code || "").toUpperCase(),
+          iataCityCode: typeof place.iata_city_code === "string" ? place.iata_city_code : null,
+          countryCode: String(place.iata_country_code || ""),
+        }))
+        .filter(place => /^[A-Z]{3}$/.test(place.iataCode));
     }),
     search: publicProcedure.input(duffelSearchInput).query(async ({ input }) => {
       if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet. Add DUFFEL_API_KEY to the Railway service variables." });
       const origin = input.origin.trim().toUpperCase();
       const destination = input.destination.trim().toUpperCase();
       if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) throw new TRPCError({ code: "BAD_REQUEST", message: "Duffel needs a three-letter IATA airport or city code, such as LAX, JFK, or LON." });
-      const slices = [{ origin, destination, departure_date: input.departureDate }, ...(input.returnDate ? [{ origin: destination, destination: origin, departure_date: input.returnDate }] : [])];
-      const response = await fetch("https://api.duffel.com/air/offer_requests?return_offers=true&view=offers", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Content-Type": "application/json", "Duffel-Version": "v2" },
-        body: JSON.stringify({ data: { slices, passengers: (input.passengerTypes?.length === input.passengers ? input.passengerTypes : Array.from({ length: input.passengers }, () => "adult" as const)).map(type => ({ type: type === "kid" ? "child" : "adult" })), cabin_class: input.cabinClass, max_connections: input.maxConnections, supplier_timeout: 10000 } }),
-      });
-      const payload = await response.json() as { data?: { id?: string; offers?: Array<any> }; errors?: Array<{ message?: string }> };
-      if (!response.ok) throw new TRPCError({ code: response.status === 401 ? "UNAUTHORIZED" : "BAD_GATEWAY", message: payload.errors?.[0]?.message || "Duffel could not complete this availability search." });
-      const offers = (payload.data?.offers || []).slice(0, 30).map((offer) => ({
-        id: offer.id, totalAmount: offer.total_amount, totalCurrency: offer.total_currency, expiresAt: offer.expires_at, ownerName: offer.owner?.name || "Airline",
-        slices: (offer.slices || []).map((slice: any) => ({ duration: slice.duration, segments: (slice.segments || []).map((segment: any) => ({ flightNumber: segment.marketing_carrier?.iata_code && segment.marketing_carrier_flight_number ? `${segment.marketing_carrier.iata_code}${segment.marketing_carrier_flight_number}` : "—", operatingCarrier: segment.operating_carrier?.name || segment.marketing_carrier?.name || "Airline", origin: segment.origin?.iata_code || "—", destination: segment.destination?.iata_code || "—", departureAt: segment.departing_at, arrivalAt: segment.arriving_at })) })),
+      if (origin === destination) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a different destination from your origin." });
+      const requestUrl = buildDuffelOfferRequestUrl();
+      const requestBody = buildDuffelOfferRequest(input);
+      let response: Response;
+      try {
+        response = await fetch(requestUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Content-Type": "application/json", "Duffel-Version": "v2" },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(25000),
+        });
+      } catch (error) {
+        console.warn("[Duffel] Flight search request failed:", error instanceof Error ? error.message : "unknown error");
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "Duffel flight search timed out or could not be reached. Please try again." });
+      }
+      let payload: { data?: { id?: string; offers?: Array<any> }; errors?: Array<{ message?: string }> };
+      try {
+        const body: unknown = await response.json();
+        if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("invalid response body");
+        payload = body as typeof payload;
+      } catch {
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "Duffel returned an invalid flight-search response. Please try again." });
+      }
+      if (!response.ok) {
+        const detail = (Array.isArray(payload.errors) ? payload.errors : []).map(error => error.message?.trim()).filter(Boolean).join(" ");
+        throw new TRPCError({
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 422 ? "BAD_REQUEST" : "BAD_GATEWAY",
+          message: response.status === 401 ? "Duffel rejected the configured API key. Please contact Bluebird." : detail || "Duffel could not complete this availability search. Please try again.",
+        });
+      }
+      const offers = (Array.isArray(payload.data?.offers) ? payload.data.offers : []).slice(0, 30).map(offer => ({
+        id: offer.id,
+        totalAmount: offer.total_amount,
+        totalCurrency: offer.total_currency,
+        expiresAt: offer.expires_at,
+        ownerName: offer.owner?.name || "Airline",
+        slices: (offer.slices || []).map((slice: any) => ({
+          duration: slice.duration,
+          segments: (slice.segments || []).map((segment: any) => ({
+            flightNumber: segment.marketing_carrier?.iata_code && segment.marketing_carrier_flight_number ? `${segment.marketing_carrier.iata_code}${segment.marketing_carrier_flight_number}` : "—",
+            operatingCarrier: segment.operating_carrier?.name || segment.marketing_carrier?.name || "Airline",
+            origin: segment.origin?.iata_code || "—",
+            destination: segment.destination?.iata_code || "—",
+            departureAt: segment.departing_at,
+            arrivalAt: segment.arriving_at,
+          })),
+        })),
       }));
       return { source: "duffel" as const, offerRequestId: payload.data?.id || null, offers };
     }),

@@ -59,12 +59,19 @@ function queryPlace(
   return { label: code ? `${text.toUpperCase()}` : text, code };
 }
 
+function airportCode(place: FlightPlace) {
+  const value = place.code || place.label.trim();
+  return /^[A-Za-z]{3}$/.test(value) ? value.toUpperCase() : "";
+}
+
 export function FlightBookingForm({
   mode,
   onSearch,
+  isSearching = false,
 }: {
   mode: "home" | "page" | "availability";
   onSearch?: (data: FlightSearchData) => void;
+  isSearching?: boolean;
 }) {
   const [location, navigate] = useLocation();
   const params = useMemo(
@@ -257,13 +264,19 @@ export function FlightBookingForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!origin.code || !destination.code) {
+    const originCode = airportCode(origin);
+    const destinationCode = airportCode(destination);
+    const missingPlaces = [
+      ...(!originCode ? ["From"] : []),
+      ...(!destinationCode ? ["To"] : []),
+    ];
+    if (missingPlaces.length) {
       setError(
-        "Choose a city or airport from the suggestions for both From and To."
+        `The ${missingPlaces.join(" and ")} field${missingPlaces.length === 1 ? " needs" : " fields need"} an airport code. Choose a matching suggestion or enter its three-letter IATA code.`
       );
       return;
     }
-    if (origin.code === destination.code) {
+    if (originCode === destinationCode) {
       setError("Choose a different destination from your origin.");
       return;
     }
@@ -288,9 +301,9 @@ export function FlightBookingForm({
       return;
     }
     const route: RequestRoute = {
-      origin: origin.code,
+      origin: originCode,
       originLabel: origin.label,
-      destination: destination.code,
+      destination: destinationCode,
       destinationLabel: destination.label,
       departureDate,
       returnDate: roundTrip ? returnDate : null,
@@ -389,7 +402,15 @@ export function FlightBookingForm({
       )}
       <div className="flight-form-grid">
         <div className="flight-place-block">
-          <PlacePicker label="From" value={origin} onChange={setOrigin} />
+          <PlacePicker
+            label="From"
+            value={origin}
+            onChange={place => {
+              setOrigin(place);
+              setError("");
+            }}
+            isInvalid={Boolean(error && !airportCode(origin))}
+          />
           <button
             type="button"
             className="use-location-button"
@@ -406,7 +427,11 @@ export function FlightBookingForm({
           <PlacePicker
             label="To"
             value={destination}
-            onChange={setDestination}
+            onChange={place => {
+              setDestination(place);
+              setError("");
+            }}
+            isInvalid={Boolean(error && !airportCode(destination))}
           />
           <button
             type="button"
@@ -575,12 +600,23 @@ export function FlightBookingForm({
           Traveler details stay in this browser session. A search or request
           does not reserve a seat or take payment.
         </p>
-        <button className="primary-button" type="submit">
-          <Search size={17} />{" "}
-          {mode === "availability"
-            ? "Check availability"
-            : "Check flight availability"}{" "}
-          <ArrowRight size={16} />
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={isSearching}
+          aria-busy={isSearching}
+        >
+          {isSearching ? (
+            <span className="bluebird-spinner" aria-hidden="true" />
+          ) : (
+            <Search size={17} />
+          )}{" "}
+          {isSearching
+            ? "Searching flights…"
+            : mode === "availability"
+              ? "Check availability"
+              : "Check flight availability"}{" "}
+          {!isSearching && <ArrowRight size={16} />}
         </button>
       </div>
     </form>

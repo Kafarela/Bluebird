@@ -689,3 +689,16 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .location-disclosure { display: block; margin-top: 5px; color: #8993a2; font-size: .64rem; line-height: 1.45; }
 
 .place-picker-error { display: block; margin-top: 5px; color: var(--red); font-size: .68rem; }
+
+
+/* Flight-search feedback */
+.bluebird-spinner { display: inline-block; flex: 0 0 auto; width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: bluebird-spin .75s linear infinite; vertical-align: middle; }
+@keyframes bluebird-spin { to { transform: rotate(360deg); } }
+.flight-search-card .primary-button:disabled, .flight-form-footer .primary-button:disabled { cursor: wait; opacity: .82; }
+.search-status { display: flex; align-items: center; flex-direction: column; }
+.search-status > .bluebird-spinner { width: 25px; height: 25px; margin-bottom: 5px; border-width: 3px; color: var(--blue); }
+.api-error-state .secondary-button { margin-top: 5px; }
+.place-picker-loading { display: flex; align-items: center; gap: 7px; margin-top: 6px; color: #728198; font-size: .7rem; }
+.place-picker-loading .bluebird-spinner { width: 14px; height: 14px; border-width: 2px; color: var(--blue); }
+.place-picker-hint { display: block; margin-top: 6px; color: #728198; font-size: .68rem; line-height: 1.45; }
+.place-picker input[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 2px rgba(166,70,79,.1); }
