@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -8,16 +8,13 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Link } from "wouter";
-import type {
-  RequestOffer,
-  RequestPassenger,
-  RequestRoute,
-} from "@shared/bookingRequest";
+import type { RequestPassenger } from "@shared/bookingRequest";
 import {
   readBookingDraft,
   type BookingDraftPassenger,
 } from "@/lib/bookingDraft";
 import { SiteShell } from "@/components/SiteShell";
+import { trpc } from "@/lib/trpc";
 
 function formatMoment(value: string) {
   const date = new Date(value);
@@ -43,57 +40,6 @@ function money(amount: string, currency: string) {
   }
 }
 
-const BOOKING_REQUEST_RECIPIENT = "love4rela@gmail.com";
-
-function buildBookingRequestEmailHref(data: {
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
-  passengers: BookingDraftPassenger[];
-  route: RequestRoute;
-  offer: RequestOffer;
-}) {
-  const passengerLines = data.passengers.map((passenger, index) => {
-    const type = passenger.type[0].toUpperCase() + passenger.type.slice(1);
-    return `Traveler ${index + 1}: ${passenger.fullName} | Gender: ${passenger.gender || "Not selected"} | Type: ${type}`;
-  });
-  const itineraryLines = data.offer.slices.flatMap((slice, sliceIndex) => [
-    `${sliceIndex === 0 ? "Outbound" : "Return"} itinerary${slice.duration ? ` (${slice.duration})` : ""}:`,
-    ...slice.segments.map(
-      segment =>
-        `- ${segment.origin} to ${segment.destination} | ${segment.operatingCarrier} ${segment.flightNumber} | ${formatMoment(segment.departureAt)} to ${formatMoment(segment.arrivalAt)}`
-    ),
-  ]);
-  const emailBody = [
-    "Hello Bluebird,",
-    "",
-    "Please review my booking request.",
-    "",
-    "Contact details:",
-    `Name: ${data.contactName.trim()}`,
-    `Email: ${data.contactEmail.trim()}`,
-    `Phone: ${data.contactPhone.trim()}`,
-    "",
-    "Travelers:",
-    ...passengerLines,
-    "",
-    "Selected flight:",
-    `Route: ${data.route.originLabel || data.route.origin} (${data.route.origin}) to ${data.route.destinationLabel || data.route.destination} (${data.route.destination})`,
-    `Trip: ${data.route.returnDate ? "Round trip" : "One way"}`,
-    `Departure: ${data.route.departureDate}`,
-    ...(data.route.returnDate ? [`Return: ${data.route.returnDate}`] : []),
-    `Passengers: ${data.route.passengerCount}`,
-    `Cabin: ${data.route.cabinClass.replaceAll("_", " ")}`,
-    `Airline: ${data.offer.airlineName}`,
-    `Fare: ${money(data.offer.totalAmount, data.offer.totalCurrency)}`,
-    ...itineraryLines,
-    "",
-    "Please confirm current fare and availability with Bluebird.",
-  ].join("\n");
-  const emailSubject = `Bluebird booking request: ${data.route.origin} to ${data.route.destination}`;
-  return `mailto:${BOOKING_REQUEST_RECIPIENT}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-}
-
 export default function BookingRequestPage() {
   const [draft] = useState(() => readBookingDraft());
   const route = draft?.route;
@@ -107,17 +53,13 @@ export default function BookingRequestPage() {
   const [passengers, setPassengers] =
     useState<BookingDraftPassenger[]>(initialPassengers);
   const [emailDraftOpened, setEmailDraftOpened] = useState(false);
-  const emailHref =
-    route && offer
-      ? buildBookingRequestEmailHref({
-          contactName,
-          contactEmail,
-          contactPhone,
-          passengers,
-          route,
-          offer,
-        })
-      : "";
+  const [requestReference, setRequestReference] = useState("");
+  const sendBookingRequest = trpc.bookingRequest.submit.useMutation({
+    onSuccess: result => {
+      setRequestReference(result.requestReference);
+      setEmailDraftOpened(true);
+    },
+  });
 
   const updatePassenger = (
     index: number,
@@ -133,13 +75,20 @@ export default function BookingRequestPage() {
     );
   };
 
-  const handleEmailClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    const form = event.currentTarget.closest("form");
-    if (form && !form.reportValidity()) {
-      event.preventDefault();
-      return;
-    }
-    setEmailDraftOpened(true);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!route || !offer || sendBookingRequest.isPending) return;
+    sendBookingRequest.mutate({
+      contactName,
+      contactEmail,
+      contactPhone,
+      passengers: passengers.map(passenger => ({
+        ...passenger,
+        gender: passenger.gender as "M" | "F",
+      })),
+      route,
+      selectedOffer: offer,
+    });
   };
 
   return (
@@ -170,16 +119,10 @@ export default function BookingRequestPage() {
             <p className="card-kicker">EMAIL DRAFT READY</p>
             <h2>Your request email is ready</h2>
             <p>
-              Your email app should open with your booking details addressed to
-              love4rela@gmail.com. Press Send in that app to deliver your
-              request to Bluebird. This page cannot confirm whether the email
-              was sent.
+              Your booking request was sent securely to Bluebird. Keep this
+              reference for your records: <strong>{requestReference}</strong>.
             </p>
             <div className="request-receipt-actions">
-              <a href={emailHref} className="primary-button">
-                <Mail size={16} /> Open email again
-                <ArrowRight size={16} />
-              </a>
               <button
                 type="button"
                 className="secondary-button"
@@ -268,7 +211,7 @@ export default function BookingRequestPage() {
             </section>
             <form
               className="request-details-card"
-              onSubmit={event => event.preventDefault()}
+              onSubmit={handleSubmit}
             >
               <div className="request-step-heading">
                 <div>
@@ -381,15 +324,12 @@ export default function BookingRequestPage() {
               </div>
               <div className="request-submit-footer">
                 <div className="request-submit-actions">
-                  <a
-                    href={emailHref}
-                    className="primary-button"
-                    onClick={handleEmailClick}
-                  >
-                    <Mail size={16} /> Send Booking Request to Bluebird
+                  <button className="primary-button" type="submit" disabled={sendBookingRequest.isPending}>
+                    <Mail size={16} /> {sendBookingRequest.isPending ? "Sending request…" : "Send Booking Request to Bluebird"}
                     <ArrowRight size={16} />
-                  </a>
+                  </button>
                 </div>
+                {sendBookingRequest.error && <p className="error-banner">{sendBookingRequest.error.message}</p>}
               </div>
             </form>
           </>
