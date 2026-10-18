@@ -171,7 +171,7 @@ export default function BookingRequestPage() {
             <h2>Your request email is ready</h2>
             <p>
               Your email app should open with your booking details addressed to
-              love4rela@gmail.com. Press Send in that app to deliver your
+              booking.bluebirdairways@inbox.eu. Press Send in that app to deliver your
               request to Bluebird. This page cannot confirm whether the email
               was sent.
             </p>
