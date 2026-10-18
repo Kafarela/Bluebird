@@ -54,3 +54,8 @@ Turn the supplied Bluebird Airways mockup into a working, database-backed travel
 - **Brand Voice:** Headlines are warm and direct (“Your next horizon starts here.”). CTAs are specific (“Find my booking”, “Open owner console”).
 - **Wordmark & Logo:** A circular blue flight marker with a white bird silhouette, paired with a compact Bluebird Airways wordmark.
 - **Signature Brand Color:** Bluebird cobalt `#19458C`.
+
+
+## Duffel contract and search feedback
+
+Use the selected place's three-letter `iata_code` as `origin` and `destination` in the outbound `slices[]` entry; one-way searches use one slice, and round trips use a second slice with the airports reversed. Send `supplier_timeout` as an offer-request query parameter. The shared picker must explain unresolved fields and unconfigured/failed city lookup, while the flight schedule search and Duffel availability results must show a loading state, prevent duplicate requests, display actionable errors, and provide retry actions. Production live results require the server-only `DUFFEL_API_KEY` Railway variable.

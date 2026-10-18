@@ -232,7 +232,11 @@ export default function FlightAvailabilityPage() {
         </div>
       </section>
       <main className="page-wrap section-block availability-page">
-        <FlightBookingForm mode="availability" onSearch={submitSearch} />
+        <FlightBookingForm
+          mode="availability"
+          onSearch={submitSearch}
+          isSearching={query.isFetching}
+        />
         {selectionError && (
           <div className="error-banner" role="alert">
             {selectionError}
@@ -247,8 +251,9 @@ export default function FlightAvailabilityPage() {
                 search live offers.
               </p>
             </div>
-          ) : query.isLoading ? (
-            <div className="empty-state">
+          ) : query.isFetching ? (
+            <div className="empty-state search-status" role="status">
+              <span className="bluebird-spinner" aria-hidden="true" />
               <h3>Searching live airline offers…</h3>
               <p>
                 Duffel is checking your selected route, passenger category, and
@@ -256,13 +261,25 @@ export default function FlightAvailabilityPage() {
               </p>
             </div>
           ) : query.isError ? (
-            <div className="empty-state">
+            <div className="empty-state api-error-state" role="alert">
               <h3>We could not complete that search.</h3>
-              <p>{query.error.message}</p>
               <p>
-                Choose a city or airport suggestion and confirm the dates are
-                valid.
+                {query.error.message ||
+                  "The live flight search is temporarily unavailable."}
               </p>
+              <p>
+                Check the selected city or airport codes and dates. If live
+                search is not configured, Bluebird must add its Duffel API key
+                before offers can load.
+              </p>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void query.refetch()}
+                disabled={query.isFetching}
+              >
+                Try flight search again
+              </button>
             </div>
           ) : (
             <>

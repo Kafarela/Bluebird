@@ -29,3 +29,10 @@
 - [x] The origin is suggested from the current IP city/state. Both From and To provide a Use current location action. To defaults to Los Angeles, CA. City/airport suggestions resolve to valid Duffel IATA codes before a live search.
 - [x] Round Trip displays a required Return Date field; One Way hides it and excludes the return slice. Depart and Return dates are presented in MM/DD/YYYY format, and return must be after departure.
 - [x] The Duffel availability page uses the same passenger/contact, trip type, route, dates, passenger-count, and layover information; it displays the selected passenger details and preserves them only in session storage, not in URL parameters.
+
+
+## Duffel integration diagnostics and search feedback
+- [x] Use Duffel Places suggestions to resolve a selected city or airport to its three-letter `iata_code`; if From or To is unresolved, identify the exact field and allow a typed three-letter IATA code as an alternative. If lookup is unconfigured or fails, show a helpful explanation rather than only a generic selection error.
+- [x] Send the selected destination in the outbound Duffel slice and, for Round Trip, add a second slice with origin and destination reversed. Put `supplier_timeout` in the documented offer-request query parameters, not the JSON body.
+- [x] The Search Flights and Duffel availability results show an animated loading spinner, prevent duplicate submits while loading, and show an actionable error with a retry action when a request fails.
+- [ ] Live production Duffel suggestions and offer searches succeed after the Railway `DUFFEL_API_KEY` variable is configured; production currently returns HTTP 412 because this variable is not set.

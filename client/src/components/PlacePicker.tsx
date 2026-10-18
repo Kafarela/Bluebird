@@ -16,10 +16,12 @@ export function PlacePicker({
   label,
   value,
   onChange,
+  isInvalid = false,
 }: {
   label: "From" | "To";
   value: FlightPlace;
   onChange: (place: FlightPlace) => void;
+  isInvalid?: boolean;
 }) {
   const [debouncedLabel, setDebouncedLabel] = useState(value.label);
   useEffect(() => {
@@ -34,7 +36,16 @@ export function PlacePicker({
       staleTime: 300000,
     }
   );
-  const suggestions = (query.data || []) as PlaceChoice[];
+  const isCurrentQuery = debouncedLabel.trim() === value.label.trim();
+  const suggestions = isCurrentQuery
+    ? ((query.data || []) as PlaceChoice[])
+    : [];
+  const suggestionError = query.error?.message
+    .toLowerCase()
+    .includes("not configured")
+    ? "Live airport lookup is not configured on this server. Enter a known three-letter IATA code or contact Bluebird."
+    : "City and airport suggestions are unavailable. Try again, or enter a known three-letter IATA code.";
+  const suggestionId = `place-suggestions-${label.toLowerCase()}`;
   const choose = (place: PlaceChoice) => {
     const code = place.iataCode.toUpperCase();
     const placeName = place.cityName || place.name;
@@ -52,21 +63,43 @@ export function PlacePicker({
         onChange={event => onChange({ label: event.target.value, code: "" })}
         placeholder="City or airport"
         autoComplete="off"
+        role="combobox"
         aria-autocomplete="list"
         aria-expanded={!value.code && suggestions.length > 0}
+        aria-controls={suggestionId}
+        aria-invalid={isInvalid || undefined}
       />
-      {!value.code && query.isFetching && (
-        <small>Finding cities and airports…</small>
-      )}
-      {!value.code && query.isError && (
-        <small className="place-picker-error">
-          City suggestions are unavailable. Please try again shortly.
+      {!value.code && isCurrentQuery && query.isFetching && (
+        <small className="place-picker-loading" role="status">
+          <span className="bluebird-spinner" aria-hidden="true" />
+          Finding cities and airports…
         </small>
       )}
+      {!value.code && isCurrentQuery && query.isError && (
+        <small className="place-picker-error" role="alert">
+          {suggestionError}
+        </small>
+      )}
+      {isInvalid && (
+        <small className="place-picker-error" role="alert">
+          Select a listed city or airport, or enter a three-letter IATA code.
+        </small>
+      )}
+      {!value.code &&
+        isCurrentQuery &&
+        !query.isFetching &&
+        query.isSuccess &&
+        suggestions.length === 0 && (
+          <small className="place-picker-hint">
+            No matches found. You can enter a three-letter IATA airport code
+            directly.
+          </small>
+        )}
       {!value.code && suggestions.length > 0 && (
         <div
           className="place-suggestions"
           role="listbox"
+          id={suggestionId}
           aria-label={`${label} city and airport suggestions`}
         >
           {suggestions.slice(0, 8).map(place => (

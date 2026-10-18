@@ -27,3 +27,6 @@ curl -fsS http://127.0.0.1:3000/api/health
 ```
 
 The health endpoint must return JSON containing `{"status":"ok"}`. Public pages can render without database credentials, but booking lookup, owner access, and account synchronization require `DATABASE_URL` and the authentication configuration.
+
+
+Duffel searches send the selected IATA place code as `origin` and `destination` in each `slices[]` item; one-way uses one slice and round-trip uses a second slice with the airports reversed. `supplier_timeout` is a query parameter, not a JSON body field. See the [official offer request documentation](https://duffel.com/docs/api/v2/offer-requests/create-offer-request).

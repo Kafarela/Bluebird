@@ -89,11 +89,238 @@ export function BookingsPage() {
 
 export function FlightSearchPage() {
   const [location] = useLocation();
-  const params = useMemo(() => new URLSearchParams(location.split("?")[1] || ""), [location]);
-  const [from, setFrom] = useState(params.get("from") || ""); const [to, setTo] = useState(params.get("to") || ""); const [date, setDate] = useState(params.get("date") || ""); const [travelers, setTravelers] = useState(params.get("travelers") || "1"); const [submitted, setSubmitted] = useState(Boolean(params.get("from") && params.get("to") && params.get("date")));
-  const query = trpc.flights.search.useQuery({ from, to, date, travelers: Number(travelers) }, { enabled: submitted && from.length >= 2 && to.length >= 2 && date.length >= 8, retry: false });
-  const submit = (event: FormEvent) => { event.preventDefault(); setSubmitted(true); };
-  return <SiteShell><PageIntro eyebrow="SEARCH FLIGHTS" title="Compare the next good departure." copy="Search by city or airport code, choose your travel date, and review the schedules currently available to Bluebird travelers." /><main className="page-wrap section-block"><form className="flight-search-card" onSubmit={submit}><div className="form-grid-three"><label className="field"><span>From city or airport</span><input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="JFK or New York" required /></label><label className="field"><span>To city or airport</span><input value={to} onChange={(e) => setTo(e.target.value)} placeholder="LHR or London" required /></label><label className="field"><span>Departure date</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></label><label className="field"><span>Travelers</span><select value={travelers} onChange={(e) => setTravelers(e.target.value)}><option value="1">1 traveler</option><option value="2">2 travelers</option><option value="3">3 travelers</option><option value="4">4 travelers</option></select></label></div><button className="primary-button" type="submit"><Search size={17} /> Search available flights</button></form>{submitted && <section className="flight-results">{query.isLoading ? <div className="empty-state">Searching schedules…</div> : query.isError ? <div className="empty-state"><h3>Flight search is temporarily unavailable.</h3><p>Try again with a city name or three-letter airport code.</p></div> : <><div className="results-heading"><div><p className="card-kicker">{query.data?.source === "live" ? "LIVE SCHEDULES" : "BLUEBIRD SCHEDULE GUIDE"}</p><h2>{query.data?.flights.length || 0} routes found</h2></div><span>{date}</span></div><div className="flight-result-list">{query.data?.flights.map((flight, index) => <article className="flight-result-row" key={`${flight.flightNumber}-${index}`}><div className="flight-airline-small"><span className="airline-logo-mark">{airlineMark(flight.airline)}</span><div><strong>{flight.airline}</strong><small>{flight.flightNumber}</small></div></div><div className="flight-time"><strong>{flight.departure}</strong><span>{flight.fromCode}</span></div><div className="flight-line"><Plane size={17} /><span>{flight.duration}</span></div><div className="flight-time"><strong>{flight.arrival}</strong><span>{flight.toCode}</span></div><div className="flight-stop"><strong>{flight.stops}</strong><small>{flight.live ? "Live schedule" : "Typical schedule"}</small></div><div className="flight-price">{flight.price === null ? <strong>See airline</strong> : <><small>from</small><strong>${flight.price}</strong></>}<Link href={`/plan-route?from=${encodeURIComponent(flight.fromName)}&to=${encodeURIComponent(flight.toName)}&date=${encodeURIComponent(date)}&flight=${encodeURIComponent(flight.flightNumber)}&price=${encodeURIComponent(String(flight.price ?? ""))}`} className="secondary-button">Plan route</Link></div></article>)}</div><p className="results-note">Schedules and prices can change. Official tickets are created and confirmed by the owner in the Bluebird console.</p></>}</section>}</main></SiteShell>;
+  const params = useMemo(
+    () => new URLSearchParams(location.split("?")[1] || ""),
+    [location]
+  );
+  const [from, setFrom] = useState(params.get("from") || "");
+  const [to, setTo] = useState(params.get("to") || "");
+  const [date, setDate] = useState(params.get("date") || "");
+  const [travelers, setTravelers] = useState(params.get("travelers") || "1");
+  const [formError, setFormError] = useState("");
+  const [searchCriteria, setSearchCriteria] = useState(() => {
+    const initialFrom = params.get("from") || "";
+    const initialTo = params.get("to") || "";
+    const initialDate = params.get("date") || "";
+    if (
+      initialFrom.trim().length < 2 ||
+      initialTo.trim().length < 2 ||
+      initialDate.length < 8
+    ) {
+      return null;
+    }
+    const parsedTravelers = Number(params.get("travelers") || 1);
+    return {
+      from: initialFrom,
+      to: initialTo,
+      date: initialDate,
+      travelers: Number.isFinite(parsedTravelers)
+        ? Math.max(1, Math.min(9, Math.floor(parsedTravelers)))
+        : 1,
+    };
+  });
+  const query = trpc.flights.search.useQuery(
+    searchCriteria || { from: "", to: "", date: "", travelers: 1 },
+    { enabled: Boolean(searchCriteria), retry: false }
+  );
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const trimmedFrom = from.trim();
+    const trimmedTo = to.trim();
+    if (trimmedFrom.length < 2 || trimmedTo.length < 2 || !date) {
+      setFormError(
+        "Enter a departure city or airport, destination, and travel date."
+      );
+      return;
+    }
+    setFormError("");
+    const parsedTravelers = Number(travelers);
+    setSearchCriteria({
+      from: trimmedFrom,
+      to: trimmedTo,
+      date,
+      travelers: Number.isFinite(parsedTravelers)
+        ? Math.max(1, Math.min(9, Math.floor(parsedTravelers)))
+        : 1,
+    });
+  };
+
+  return (
+    <SiteShell>
+      <PageIntro
+        eyebrow="SEARCH FLIGHTS"
+        title="Compare the next good departure."
+        copy="Search by city or airport code, choose your travel date, and review the schedules currently available to Bluebird travelers."
+      />
+      <main className="page-wrap section-block">
+        <form className="flight-search-card" onSubmit={submit}>
+          <div className="form-grid-three">
+            <label className="field">
+              <span>From city or airport</span>
+              <input
+                value={from}
+                onChange={event => setFrom(event.target.value)}
+                placeholder="JFK or New York"
+                required
+              />
+            </label>
+            <label className="field">
+              <span>To city or airport</span>
+              <input
+                value={to}
+                onChange={event => setTo(event.target.value)}
+                placeholder="LHR or London"
+                required
+              />
+            </label>
+            <label className="field">
+              <span>Departure date</span>
+              <input
+                type="date"
+                value={date}
+                onChange={event => setDate(event.target.value)}
+                required
+              />
+            </label>
+            <label className="field">
+              <span>Travelers</span>
+              <select
+                value={travelers}
+                onChange={event => setTravelers(event.target.value)}
+              >
+                {Array.from({ length: 9 }, (_, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {index + 1} traveler{index ? "s" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {formError && (
+            <div className="error-banner" role="alert">
+              {formError}
+            </div>
+          )}
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={query.isFetching}
+            aria-busy={query.isFetching}
+          >
+            {query.isFetching ? (
+              <span className="bluebird-spinner" aria-hidden="true" />
+            ) : (
+              <Search size={17} />
+            )}
+            {query.isFetching
+              ? "Searching schedules…"
+              : "Search available flights"}
+          </button>
+        </form>
+        {searchCriteria && (
+          <section className="flight-results" aria-live="polite">
+            {query.isFetching ? (
+              <div className="empty-state search-status" role="status">
+                <span className="bluebird-spinner" aria-hidden="true" />
+                <h3>Searching flight schedules…</h3>
+                <p>
+                  Checking current Bluebird schedule sources for{" "}
+                  {searchCriteria.from} to {searchCriteria.to}.
+                </p>
+              </div>
+            ) : query.isError ? (
+              <div className="empty-state api-error-state" role="alert">
+                <h3>Flight search is temporarily unavailable.</h3>
+                <p>
+                  {query.error.message ||
+                    "We could not reach the schedule service."}
+                </p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void query.refetch()}
+                  disabled={query.isFetching}
+                >
+                  Try flight search again
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="results-heading">
+                  <div>
+                    <p className="card-kicker">
+                      {query.data?.source === "live"
+                        ? "LIVE SCHEDULES"
+                        : "BLUEBIRD SCHEDULE GUIDE"}
+                    </p>
+                    <h2>{query.data?.flights.length || 0} routes found</h2>
+                  </div>
+                  <span>{searchCriteria.date}</span>
+                </div>
+                <div className="flight-result-list">
+                  {(query.data?.flights || []).map((flight, index) => (
+                    <article
+                      className="flight-result-row"
+                      key={`${flight.flightNumber}-${index}`}
+                    >
+                      <div className="flight-airline-small">
+                        <span className="airline-logo-mark">
+                          {airlineMark(flight.airline)}
+                        </span>
+                        <div>
+                          <strong>{flight.airline}</strong>
+                          <small>{flight.flightNumber}</small>
+                        </div>
+                      </div>
+                      <div className="flight-time">
+                        <strong>{flight.departure}</strong>
+                        <span>{flight.fromCode}</span>
+                      </div>
+                      <div className="flight-line">
+                        <Plane size={17} />
+                        <span>{flight.duration}</span>
+                      </div>
+                      <div className="flight-time">
+                        <strong>{flight.arrival}</strong>
+                        <span>{flight.toCode}</span>
+                      </div>
+                      <div className="flight-stop">
+                        <strong>{flight.stops}</strong>
+                        <small>
+                          {flight.live ? "Live schedule" : "Typical schedule"}
+                        </small>
+                      </div>
+                      <div className="flight-price">
+                        {flight.price === null ? (
+                          <strong>See airline</strong>
+                        ) : (
+                          <>
+                            <small>from</small>
+                            <strong>${flight.price}</strong>
+                          </>
+                        )}
+                        <Link
+                          href={`/plan-route?from=${encodeURIComponent(flight.fromName)}&to=${encodeURIComponent(flight.toName)}&date=${encodeURIComponent(searchCriteria.date)}&flight=${encodeURIComponent(flight.flightNumber)}&price=${encodeURIComponent(String(flight.price ?? ""))}`}
+                          className="secondary-button"
+                        >
+                          Plan route
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <p className="results-note">
+                  Schedules and prices can change. Official tickets are created
+                  and confirmed by the owner in the Bluebird console.
+                </p>
+              </>
+            )}
+          </section>
+        )}
+      </main>
+    </SiteShell>
+  );
 }
 
 export function PlanRoutePage() {

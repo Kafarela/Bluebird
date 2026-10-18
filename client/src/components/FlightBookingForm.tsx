@@ -59,12 +59,27 @@ function queryPlace(
   return { label: code ? `${text.toUpperCase()}` : text, code };
 }
 
+function airportCode(place: FlightPlace) {
+  const value = place.code || place.label.trim();
+  return /^[A-Za-z]{3}$/.test(value) ? value.toUpperCase() : "";
+}
+
+function duffelLookupError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("not configured") || message.includes("api key")) {
+    return "Live Duffel airport lookup is not configured or authorized. Enter a known three-letter IATA code or contact Bluebird.";
+  }
+  return "";
+}
+
 export function FlightBookingForm({
   mode,
   onSearch,
+  isSearching = false,
 }: {
   mode: "home" | "page" | "availability";
   onSearch?: (data: FlightSearchData) => void;
+  isSearching?: boolean;
 }) {
   const [location, navigate] = useLocation();
   const params = useMemo(
@@ -175,8 +190,10 @@ export function FlightBookingForm({
           });
         }
       })
-      .catch(() => {
-        // Keep the origin editable when IP geolocation is unavailable.
+      .catch(error => {
+        if (cancelled) return;
+        const lookupError = duffelLookupError(error);
+        if (lookupError) setError(lookupError);
       });
     return () => {
       cancelled = true;
@@ -242,9 +259,10 @@ export function FlightBookingForm({
             label: `${nearest.cityName || nearest.name} · ${nearest.iataCode}`,
             code: nearest.iataCode,
           });
-        } catch {
+        } catch (error) {
           setError(
-            "We could not find a nearby airport. Enter a city or airport instead."
+            duffelLookupError(error) ||
+              "We could not find a nearby airport. Enter a city or airport instead."
           );
         }
       },
@@ -257,13 +275,19 @@ export function FlightBookingForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    if (!origin.code || !destination.code) {
+    const originCode = airportCode(origin);
+    const destinationCode = airportCode(destination);
+    const missingPlaces = [
+      ...(!originCode ? ["From"] : []),
+      ...(!destinationCode ? ["To"] : []),
+    ];
+    if (missingPlaces.length) {
       setError(
-        "Choose a city or airport from the suggestions for both From and To."
+        `The ${missingPlaces.join(" and ")} field${missingPlaces.length === 1 ? " needs" : " fields need"} an airport code. Choose a matching suggestion or enter its three-letter IATA code.`
       );
       return;
     }
-    if (origin.code === destination.code) {
+    if (originCode === destinationCode) {
       setError("Choose a different destination from your origin.");
       return;
     }
@@ -288,9 +312,9 @@ export function FlightBookingForm({
       return;
     }
     const route: RequestRoute = {
-      origin: origin.code,
+      origin: originCode,
       originLabel: origin.label,
-      destination: destination.code,
+      destination: destinationCode,
       destinationLabel: destination.label,
       departureDate,
       returnDate: roundTrip ? returnDate : null,
@@ -389,7 +413,15 @@ export function FlightBookingForm({
       )}
       <div className="flight-form-grid">
         <div className="flight-place-block">
-          <PlacePicker label="From" value={origin} onChange={setOrigin} />
+          <PlacePicker
+            label="From"
+            value={origin}
+            onChange={place => {
+              setOrigin(place);
+              setError("");
+            }}
+            isInvalid={Boolean(error && !airportCode(origin))}
+          />
           <button
             type="button"
             className="use-location-button"
@@ -406,7 +438,11 @@ export function FlightBookingForm({
           <PlacePicker
             label="To"
             value={destination}
-            onChange={setDestination}
+            onChange={place => {
+              setDestination(place);
+              setError("");
+            }}
+            isInvalid={Boolean(error && !airportCode(destination))}
           />
           <button
             type="button"
@@ -575,12 +611,23 @@ export function FlightBookingForm({
           Traveler details stay in this browser session. A search or request
           does not reserve a seat or take payment.
         </p>
-        <button className="primary-button" type="submit">
-          <Search size={17} />{" "}
-          {mode === "availability"
-            ? "Check availability"
-            : "Check flight availability"}{" "}
-          <ArrowRight size={16} />
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={isSearching}
+          aria-busy={isSearching}
+        >
+          {isSearching ? (
+            <span className="bluebird-spinner" aria-hidden="true" />
+          ) : (
+            <Search size={17} />
+          )}{" "}
+          {isSearching
+            ? "Searching flights…"
+            : mode === "availability"
+              ? "Check availability"
+              : "Check flight availability"}{" "}
+          {!isSearching && <ArrowRight size={16} />}
         </button>
       </div>
     </form>
