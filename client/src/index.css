@@ -363,6 +363,24 @@ button:disabled { cursor: not-allowed; opacity: .64; }
 .flight-price > strong { color: var(--navy); font-size: 1.15rem; }
 .flight-price .secondary-button { padding: 7px 10px; font-size: .7rem; }
 .results-note { margin: 15px 0 0; color: #8290a2; font-size: .73rem; }
+.availability-results { margin-top: 42px; }
+.availability-search-card { width: 100%; }
+.availability-search-card small { display: block; margin-top: 6px; color: #8491a4; font-size: .7rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.availability-offer-list { display: flex; flex-direction: column; gap: 14px; }
+.availability-offer { padding: 22px; border: 1px solid #deddd7; border-radius: 11px; background: white; box-shadow: var(--shadow); }
+.availability-offer-heading, .availability-offer-footer { display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+.availability-offer-heading h3 { margin: 0; color: var(--navy); font-size: 1.05rem; }
+.availability-offer-heading > strong { color: var(--navy); font-size: 1.2rem; }
+.availability-slice { margin-top: 18px; padding-top: 15px; border-top: 1px solid #e4e8ee; }
+.slice-label { color: #77869a; font-size: .67rem; font-weight: 800; letter-spacing: .1em; }
+.availability-segment { display: grid; grid-template-columns: .75fr auto .75fr 1.7fr; align-items: center; gap: 14px; margin-top: 10px; }
+.availability-segment > div { display: flex; flex-direction: column; }
+.availability-segment strong { color: var(--navy); font-size: .9rem; }
+.availability-segment span { color: #7c899b; font-size: .7rem; font-weight: 750; letter-spacing: .08em; }
+.availability-segment > svg { color: var(--blue); }
+.segment-carrier { text-align: right; }
+.availability-offer-footer { margin-top: 18px; padding-top: 15px; border-top: 1px solid #e4e8ee; color: #7d899c; font-size: .72rem; }
+@media (max-width: 560px) { .availability-offer { padding: 17px; }.availability-offer-heading, .availability-offer-footer { align-items: flex-start; flex-direction: column; gap: 10px; }.availability-offer-footer .secondary-button { width: 100%; justify-content: center; }.availability-segment { grid-template-columns: .8fr auto .8fr; gap: 9px; }.segment-carrier { grid-column: 1 / -1; text-align: left; } }
 @media print { body { background: white; } .site-header, .site-footer, .inner-hero, .lookup-card, .ticket-actions, .ticket-rules { display: none !important; } .page-wrap { width: 100%; } .section-block { padding: 0; } .lookup-result-area, .booking-result, .enriched-ticket { margin: 0 !important; box-shadow: none !important; border: 0 !important; } .ticket-summary-grid, .ticket-finance-grid { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 @media (max-width: 760px) { .flight-search-card { display: block; } .flight-search-card .primary-button { margin-top: 15px; width: 100%; } .flight-result-row { grid-template-columns: 1fr 1fr; gap: 13px; } .flight-airline-small { grid-column: 1 / -1; } .flight-line { justify-content: center; } .flight-price { align-items: flex-start; } }
 

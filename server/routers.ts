@@ -8,6 +8,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import PDFDocument from "pdfkit";
 import { hashPassword, normalizeEmail, verifyPassword } from "./_core/password";
 import { sdk } from "./_core/sdk";
+import { ENV } from "./_core/env";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -151,6 +152,15 @@ const flightSearchInput = z.object({
   to: z.string().trim().min(2).max(120),
   date: z.string().trim().min(8).max(20),
   travelers: z.coerce.number().int().min(1).max(9).default(1),
+});
+const duffelSearchInput = z.object({
+  origin: z.string().trim().min(3).max(120),
+  destination: z.string().trim().min(3).max(120),
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid departure date"),
+  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid return date").optional().or(z.literal("")),
+  passengers: z.coerce.number().int().min(1).max(9),
+  cabinClass: z.enum(["economy", "premium_economy", "business", "first"]),
+  maxConnections: z.coerce.number().int().min(0).max(3),
 });
 
 const flightScheduleInput = z.object({
@@ -305,6 +315,27 @@ export const appRouter = router({
       const catalogFlights = savedSchedules.map((flight) => ({ ...flight, price: flight.price === null ? null : Number(flight.price), live: false }));
       const matches = catalogFlights.length ? catalogFlights : fallbackFlights.filter((flight) => `${flight.fromCode} ${flight.fromName}`.toLowerCase().includes(input.from.toLowerCase()) && `${flight.toCode} ${flight.toName}`.toLowerCase().includes(input.to.toLowerCase()));
       return { source: "schedule" as const, flights: (matches.length ? matches : fallbackFlights).map((flight) => ({ ...flight, live: false })) };
+    }),
+  }),
+  duffel: router({
+    search: publicProcedure.input(duffelSearchInput).query(async ({ input }) => {
+      if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight availability is not configured yet. Add DUFFEL_API_KEY to the Railway service variables." });
+      const origin = input.origin.trim().toUpperCase();
+      const destination = input.destination.trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) throw new TRPCError({ code: "BAD_REQUEST", message: "Duffel needs a three-letter IATA airport or city code, such as LAX, JFK, or LON." });
+      const slices = [{ origin, destination, departure_date: input.departureDate }, ...(input.returnDate ? [{ origin: destination, destination: origin, departure_date: input.returnDate }] : [])];
+      const response = await fetch("https://api.duffel.com/air/offer_requests?return_offers=true&view=offers", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Content-Type": "application/json", "Duffel-Version": "v2" },
+        body: JSON.stringify({ data: { slices, passengers: Array.from({ length: input.passengers }, () => ({ type: "adult" })), cabin_class: input.cabinClass, max_connections: input.maxConnections, supplier_timeout: 10000 } }),
+      });
+      const payload = await response.json() as { data?: { id?: string; offers?: Array<any> }; errors?: Array<{ message?: string }> };
+      if (!response.ok) throw new TRPCError({ code: response.status === 401 ? "UNAUTHORIZED" : "BAD_GATEWAY", message: payload.errors?.[0]?.message || "Duffel could not complete this availability search." });
+      const offers = (payload.data?.offers || []).slice(0, 30).map((offer) => ({
+        id: offer.id, totalAmount: offer.total_amount, totalCurrency: offer.total_currency, expiresAt: offer.expires_at, ownerName: offer.owner?.name || "Airline",
+        slices: (offer.slices || []).map((slice: any) => ({ duration: slice.duration, segments: (slice.segments || []).map((segment: any) => ({ flightNumber: segment.marketing_carrier?.iata_code && segment.marketing_carrier_flight_number ? `${segment.marketing_carrier.iata_code}${segment.marketing_carrier_flight_number}` : "—", operatingCarrier: segment.operating_carrier?.name || segment.marketing_carrier?.name || "Airline", origin: segment.origin?.iata_code || "—", destination: segment.destination?.iata_code || "—", departureAt: segment.departing_at, arrivalAt: segment.arriving_at })) })),
+      }));
+      return { source: "duffel" as const, offerRequestId: payload.data?.id || null, offers };
     }),
   }),
 });
