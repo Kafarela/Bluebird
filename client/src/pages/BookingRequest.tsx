@@ -250,8 +250,7 @@ export default function BookingRequestPage() {
               </div>
               <p className="request-private-note">
                 <ShieldCheck size={16} /> Your contact and traveler details are
-                sent securely to Bluebird and are visible only in the owner
-                console.
+                sent securely to Bluebird.
               </p>
               <div className="booking-form-grid">
                 <label className="field">
