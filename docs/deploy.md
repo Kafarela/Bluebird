@@ -4,9 +4,9 @@ Bluebird is packaged as a Docker web service for Railway. The application uses P
 
 ## Supabase
 
-The project schema is in `drizzle-pg/0000_kind_microbe.sql`. Apply it once to the Supabase project before the first production login. The Bluebird tables are `users`, `owner_claims`, and `flight_bookings`.
+The current PostgreSQL schema is defined in `drizzle/schema.ts`. Bluebird uses `users`, `owner_claims`, `flight_bookings`, `flight_schedules`, and `flight_requests`. Railway's `railway.toml` runs `pnpm db:sync` in its pre-deploy step; for a separate database environment, set `DATABASE_URL` and run `pnpm db:sync` from the repository to synchronize additive schema changes before serving traffic.
 
-Set `DATABASE_URL` to the Supabase Postgres connection string. For hosted services, use the Supabase transaction pooler connection string with `sslmode=require` when the provider recommends pooled connections. Keep this value server-side; never put it in client code.
+Set `DATABASE_URL` to the Supabase Postgres connection string. For hosted services, use the Supabase transaction pooler connection string with `sslmode=require` when the provider recommends pooled connections. Keep this value server-side; never put it in client code. Flight requests are owner-only review records, not airline orders or ticket records; the server refreshes the chosen offer through Duffel before writing provider-sourced fare and itinerary data. Requests contain submitted contact details, so protect the database credentials. Duffel recommends retrieving the single offer to obtain current information and notes that this does not guarantee availability at booking; Bluebird re-fetches the offer when a traveler submits a request ([official offer API documentation](https://duffel.com/docs/api/v2/offers)).
 
 The existing authentication adapter still uses Manus OAuth. Set the `MANUS_*` variables listed in `.env.example` if retaining that sign-in flow. If the site should be completely independent of Manus, replace the adapter in `server/_core/oauth.ts` and `server/_core/sdk.ts` with the chosen provider's server-side auth flow before removing those variables.
 

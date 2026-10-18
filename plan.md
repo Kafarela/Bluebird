@@ -2,28 +2,32 @@
 
 ## Product scope
 
-Turn the supplied Bluebird Airways mockup into a working, database-backed travel website. Preserve the mockup's navy/cobalt/cream visual language and make every primary navigation item, Login, Sign Up, My Bookings, Book a Flight, and homepage quick action lead to a useful destination. Use Manus OAuth for traveler authentication. Use a database-backed role model so the owner is the only person who can create and edit ticket records; travelers can search for owner-created records by booking reference.
+Turn the supplied Bluebird Airways mockup into a working, database-backed travel website. Preserve the mockup's navy/cobalt/cream visual language and make every primary navigation item, Login, Sign Up, My Bookings, Book a Flight, and homepage quick action lead to a useful destination. Use Manus OAuth for traveler authentication. Use a database-backed role model so the owner is the only person who can create and edit ticket records; travelers can search for owner-created records by booking reference. Travelers can select a live Duffel offer and submit a booking request for owner review; this request workflow does not place an airline order, issue a ticket, or collect payment.
 
 ## Implementation approach
 
-- **Frontend:** React + TypeScript + Wouter, reusing the initialized web-db-user starter and building a small route-aware application shell with responsive navigation, landing page sections, public lookup, auth entry page, destination explorer, booking request guidance, and owner admin dashboard.
-- **Backend:** tRPC procedures in `server/routers.ts` for public booking lookup and protected owner operations. Public lookup returns only the record matching an exact booking reference. Admin list/create/update procedures require an authenticated user whose database role is `admin`.
-- **Persistence:** Extend `drizzle/schema.ts` with a `flightBookings` table containing a custom booking reference, traveler identity, worldwide origin/destination city/state/country fields, departure/arrival date-times, amount due, amount paid, payment status, notes, and timestamps. Add a committed additive migration and run the migration against the selected managed database.
-- **Authorization:** Keep the starter Manus OAuth session. Add a one-time owner claim flow: the first authenticated account may claim owner access only while no admin exists; after that, the database role is the sole authorization source. If `OWNER_OPEN_ID` is configured, it is honored as the owner identity. All booking mutations and admin reads require the owner role.
+- **Frontend:** React + TypeScript + Wouter, reusing the existing application and building a route-aware shell, public booking search/request flow, public lookup, authentication pages, destination explorer, and owner console.
+- **Backend:** tRPC procedures in `server/routers.ts` for public booking lookup and request submission, plus owner-protected ticket and request management operations. Public lookup returns only the exact booking reference; owner inbox procedures protect request PII.
+- **Persistence:** Existing PostgreSQL `flight_bookings` and `flight_schedules` remain intact. Add a `flight_requests` table with an opaque request reference, contact details, passenger list, search route, server-refreshed selected-offer snapshot, owner status/notes, and timestamps. Railway's existing pre-deploy `db:sync` keeps the schema synchronized.
+- **Authorization:** Keep the existing session and database-backed owner role. All request inbox reads and status/notes updates require the owner role. Public travelers may submit only a request, not create or modify tickets.
+- **Flight request flow:** Keep traveler/contact data in a validated, session-scoped browser draft rather than URL parameters. Before storing a request, retrieve the selected offer again from Duffel, reject expired or unavailable offers and any fare change that requires the traveler to choose again, verify the route/passenger count, and store only provider-returned fare and segment data. Then show the refreshed fare and a receipt with a high-entropy unique reference. State clearly that this does not reserve inventory, guarantee the fare, issue a ticket, or charge the traveler.
 - **Destinations:** Include USA, United Kingdom, Canada, every North and South American country in a curated destination directory, plus worldwide free-form city/state/country fields in admin booking forms.
-- **Validation:** Use Zod on tRPC input, normalize booking references to uppercase, require valid schedule ordering and non-negative money fields, and enforce unique references with a friendly error.
-- **Frontend data flow:** Use the generated tRPC hooks. Public booking lookup does not require login; admin dashboard requires Manus OAuth and then shows a claim-owner state or the protected booking workspace. Mutations invalidate admin list and lookup caches so edits immediately appear to travelers.
+- **Validation:** Use Zod on tRPC input, normalize booking references to uppercase, require valid schedule ordering and non-negative money fields, enforce unique references, and validate request contact/passenger/route/offer fields and matching passenger counts.
+- **Frontend data flow:** Use generated tRPC hooks. Public booking lookup and booking-request submission do not require login; the owner dashboard and request inbox require an authenticated user whose database role is `admin`.
 
 ## Project structure
 
 - `client/src/App.tsx`: route manifest and shared shell.
 - `client/src/pages/Home.tsx`: mockup-inspired homepage with working search card, offers, destinations, and quick actions.
-- `client/src/pages/PublicPages.tsx`: Login/Sign Up, My Bookings, Book a Flight, Destinations, and informational pages.
-- `client/src/pages/Admin.tsx`: owner claim/login gate and create/edit booking workspace.
+- `client/src/pages/PublicPages.tsx`: Login/Sign Up, My Bookings, Destinations, and informational pages. `BookPage.tsx` and `FlightAvailability.tsx` implement the planner and live offer selection.
+- `client/src/pages/BookingRequest.tsx`: traveler review, request submission, and receipt.
+- `client/src/components/FlightRequestInbox.tsx`: owner-only booking request triage.
+- `client/src/pages/Admin.tsx`: owner claim/login gate and create/edit ticket workspace.
 - `client/src/index.css`: Bluebird visual system and responsive layout.
-- `server/routers.ts`: booking and owner tRPC procedures.
-- `server/db.ts`: booking queries and role/owner helpers.
-- `drizzle/schema.ts` + `drizzle/0001_bookings.sql`: persistent booking schema.
+- `server/routers.ts`: booking, request, schedule, authentication, and owner tRPC procedures.
+- `server/db.ts`: PostgreSQL booking/request queries and owner helpers.
+- `drizzle/schema.ts` and `drizzle-pg/`: database schema and SQL deployment history.
+- `shared/bookingRequest.ts`: shared request input validation and data types.
 - `client/public/manus-routes.json`: complete public route manifest.
 
 ## Design direction
@@ -42,7 +46,7 @@ Turn the supplied Bluebird Airways mockup into a working, database-backed travel
 - **Layout Paradigm:** A wide, left-weighted travel narrative with layered search panels and staggered content bands rather than a generic centered dashboard grid.
 - **Signature Elements:** Rounded “boarding pass” data panels, thin route lines with circular airport markers, and small uppercase eyebrow labels for itinerary metadata.
 - **Interaction Philosophy:** Every click should either move the traveler toward a destination or reveal a precise next step. Forms use explicit labels, helpful defaults, and status feedback instead of hidden behavior.
-- **Animation:** Subtle lift on cards, short opacity/translate transitions for page content, and no decorative motion that competes with dates, times, prices, or references.
+- **Animation:** Subtle lift on cards, short opacity/translate transitions for page content, and no decorative motion that competes with dates, times, prices, references, or request status.
 - **Typography System:** System sans stack for compact operational clarity; oversized navy display headlines, small tracked uppercase labels, and tabular-feeling numerals for booking data.
 - **Brand Essence:** Calm, owner-managed flight coordination for travelers who want the details to be clear; dependable, composed, human.
 - **Brand Voice:** Headlines are warm and direct (“Your next horizon starts here.”). CTAs are specific (“Find my booking”, “Open owner console”).

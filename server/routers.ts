@@ -9,6 +9,8 @@ import PDFDocument from "pdfkit";
 import { hashPassword, normalizeEmail, verifyPassword } from "./_core/password";
 import { sdk } from "./_core/sdk";
 import { ENV } from "./_core/env";
+import { randomBytes } from "node:crypto";
+import { bookingRequestInputSchema } from "../shared/bookingRequest";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -336,6 +338,100 @@ export const appRouter = router({
         slices: (offer.slices || []).map((slice: any) => ({ duration: slice.duration, segments: (slice.segments || []).map((segment: any) => ({ flightNumber: segment.marketing_carrier?.iata_code && segment.marketing_carrier_flight_number ? `${segment.marketing_carrier.iata_code}${segment.marketing_carrier_flight_number}` : "—", operatingCarrier: segment.operating_carrier?.name || segment.marketing_carrier?.name || "Airline", origin: segment.origin?.iata_code || "—", destination: segment.destination?.iata_code || "—", departureAt: segment.departing_at, arrivalAt: segment.arriving_at })) })),
       }));
       return { source: "duffel" as const, offerRequestId: payload.data?.id || null, offers };
+    }),
+  }),
+  bookingRequest: router({
+    submit: publicProcedure.input(bookingRequestInputSchema).mutation(async ({ input }) => {
+      if (!ENV.duffelApiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Live flight verification is not configured. Please contact Bluebird directly." });
+      let offerResponse: Response;
+      try {
+        offerResponse = await fetch(`https://api.duffel.com/air/offers/${encodeURIComponent(input.selectedOffer.id)}`, {
+          headers: { Authorization: `Bearer ${ENV.duffelApiKey}`, Accept: "application/json", "Accept-Encoding": "gzip", "Duffel-Version": "v2" },
+          signal: AbortSignal.timeout(10_000),
+        });
+      } catch (error) {
+        console.warn("[BookingRequest] Duffel offer refresh failed:", error instanceof Error ? error.message : "unknown error");
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "We could not refresh that airline offer. Please search again and choose a current flight." });
+      }
+      let offerPayload: { data?: any };
+      try { offerPayload = await offerResponse.json() as { data?: any }; }
+      catch { throw new TRPCError({ code: "BAD_GATEWAY", message: "Duffel returned an invalid offer response. Please search again." }); }
+      if (!offerResponse.ok || !offerPayload.data) {
+        throw new TRPCError({ code: offerResponse.status === 404 || offerResponse.status === 410 ? "CONFLICT" : "BAD_GATEWAY", message: "That airline offer is no longer available. Please search again and choose a current flight." });
+      }
+      const providerOffer = offerPayload.data;
+      const expiry = typeof providerOffer.expires_at === "string" ? providerOffer.expires_at : "";
+      if (providerOffer.id !== input.selectedOffer.id || providerOffer.partial === true || !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) {
+        throw new TRPCError({ code: "CONFLICT", message: "That airline offer has expired or cannot be booked. Please search again and choose a current flight." });
+      }
+      if (!Array.isArray(providerOffer.passengers) || providerOffer.passengers.length !== input.route.passengerCount) {
+        throw new TRPCError({ code: "CONFLICT", message: "The selected offer no longer matches the traveler count. Please search again." });
+      }
+      const verifiedOffer = {
+        id: providerOffer.id,
+        offerRequestId: typeof providerOffer.offer_request_id === "string" ? providerOffer.offer_request_id : null,
+        airlineName: providerOffer.owner?.name || "Airline",
+        totalAmount: String(providerOffer.total_amount ?? ""),
+        totalCurrency: String(providerOffer.total_currency ?? ""),
+        expiresAt: expiry,
+        slices: (Array.isArray(providerOffer.slices) ? providerOffer.slices : []).map((slice: any) => ({
+          duration: typeof slice.duration === "string" ? slice.duration : null,
+          segments: (Array.isArray(slice.segments) ? slice.segments : []).map((segment: any) => ({
+            origin: segment.origin?.iata_code || "",
+            destination: segment.destination?.iata_code || "",
+            departureAt: segment.departing_at || "",
+            arrivalAt: segment.arriving_at || "",
+            operatingCarrier: segment.operating_carrier?.name || segment.marketing_carrier?.name || "Airline",
+            flightNumber: segment.marketing_carrier?.iata_code && segment.marketing_carrier_flight_number ? `${segment.marketing_carrier.iata_code}${segment.marketing_carrier_flight_number}` : "UNKNOWN",
+          })),
+        })),
+      };
+      const verifiedInput = bookingRequestInputSchema.safeParse({ ...input, selectedOffer: verifiedOffer });
+      if (!verifiedInput.success) throw new TRPCError({ code: "CONFLICT", message: "The airline offer no longer matches the route or dates you selected. Search again for an updated flight." });
+      const currentFare = verifiedInput.data.selectedOffer;
+      if (Number(currentFare.totalAmount) !== Number(input.selectedOffer.totalAmount) || currentFare.totalCurrency !== input.selectedOffer.totalCurrency) {
+        throw new TRPCError({ code: "CONFLICT", message: `The airline updated this fare to ${currentFare.totalCurrency} ${currentFare.totalAmount}. Search again and choose the updated offer before sending a request.` });
+      }
+
+      const requestData = {
+        contactName: input.contactName,
+        contactEmail: input.contactEmail,
+        contactPhone: input.contactPhone,
+        passengers: input.passengers,
+        route: verifiedInput.data.route,
+        selectedOffer: currentFare,
+        status: "new",
+        ownerNotes: null,
+      } as const;
+      let request: Awaited<ReturnType<typeof db.createFlightRequest>> | undefined;
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const requestReference = `BR-${randomBytes(8).toString("hex").toUpperCase()}`;
+            request = await db.createFlightRequest({ ...requestData, requestReference });
+            break;
+          } catch (error) {
+            const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
+            if (code === "23505" && attempt < 2) continue;
+            throw error;
+          }
+        }
+      } catch (error) {
+        console.error("[BookingRequest] Unable to save request:", error instanceof Error ? error.message : "unknown error");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
+      }
+      if (!request) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
+      return { requestReference: request.requestReference, status: request.status, verifiedFare: { totalAmount: currentFare.totalAmount, totalCurrency: currentFare.totalCurrency, airlineName: currentFare.airlineName } };
+    }),
+    adminList: adminProcedure.query(() => db.listFlightRequests()),
+    adminUpdate: adminProcedure.input(z.object({
+      id: z.number().int().positive(),
+      status: z.enum(["new", "contacted", "closed"]),
+      ownerNotes: z.string().max(2000).optional().or(z.literal("")),
+    })).mutation(async ({ input }) => {
+      const request = await db.updateFlightRequest(input.id, { status: input.status, ownerNotes: input.ownerNotes?.trim() || null });
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Booking request not found." });
+      return { id: request.id, status: request.status, updatedAt: request.updatedAt };
     }),
   }),
 });
