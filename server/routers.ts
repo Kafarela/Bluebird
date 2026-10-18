@@ -501,11 +501,17 @@ export const appRouter = router({
         status: "new",
         ownerNotes: null,
       } as const;
+      const requestReference = `BR-${randomBytes(8).toString("hex").toUpperCase()}`;
+      try {
+        await sendBookingRequestEmail({ ...requestData, requestReference });
+      } catch (error) {
+        console.error("[Email] Booking request failed:", error instanceof Error ? error.message : "unknown error");
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "Inbox.eu could not deliver your booking request. Please try again in a moment." });
+      }
       let request: Awaited<ReturnType<typeof db.createFlightRequest>> | undefined;
       try {
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
-            const requestReference = `BR-${randomBytes(8).toString("hex").toUpperCase()}`;
             request = await db.createFlightRequest({ ...requestData, requestReference });
             break;
           } catch (error) {
@@ -516,16 +522,9 @@ export const appRouter = router({
         }
       } catch (error) {
         console.error("[BookingRequest] Unable to save request:", error instanceof Error ? error.message : "unknown error");
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
+        return { requestReference, status: "new" as const, persisted: false as const, verifiedFare: { totalAmount: currentFare.totalAmount, totalCurrency: currentFare.totalCurrency, airlineName: currentFare.airlineName } };
       }
-      if (!request) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
-      try {
-        await sendBookingRequestEmail({ ...requestData, requestReference: request.requestReference });
-      } catch (error) {
-        console.error("[Email] Booking request failed:", error instanceof Error ? error.message : "unknown error");
-        throw new TRPCError({ code: "BAD_GATEWAY", message: "We saved your request, but Inbox.eu could not deliver the email. Please try again or contact Bluebird directly." });
-      }
-      return { requestReference: request.requestReference, status: request.status, verifiedFare: { totalAmount: currentFare.totalAmount, totalCurrency: currentFare.totalCurrency, airlineName: currentFare.airlineName } };
+      return { requestReference, status: request?.status || "new", persisted: true as const, verifiedFare: { totalAmount: currentFare.totalAmount, totalCurrency: currentFare.totalCurrency, airlineName: currentFare.airlineName } };
     }),
     adminList: adminProcedure.query(() => db.listFlightRequests()),
     adminUpdate: adminProcedure.input(z.object({
