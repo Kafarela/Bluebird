@@ -686,8 +686,6 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 @media (max-width: 900px) { .flight-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .flight-booking-form { padding: 20px 17px; }.flight-form-grid, .flight-extra-passengers .passenger-details-grid { grid-template-columns: 1fr; }.flight-form-footer { align-items: stretch; flex-direction: column; }.flight-form-footer .primary-button { width: 100%; justify-content: center; }.flight-trip-tabs { width: 100%; }.flight-trip-tabs button { flex: 1; } }
 
-.location-disclosure { display: block; margin-top: 5px; color: #8993a2; font-size: .64rem; line-height: 1.45; }
-
 .place-picker-error { display: block; margin-top: 5px; color: var(--red); font-size: .68rem; }
 
 

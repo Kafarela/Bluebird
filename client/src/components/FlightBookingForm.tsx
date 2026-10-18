@@ -429,10 +429,6 @@ export function FlightBookingForm({
           >
             <LocateFixed size={14} /> Use current location
           </button>
-          <small className="location-disclosure">
-            A third-party IP lookup suggests an approximate city/state. Device
-            location requires browser permission.
-          </small>
         </div>
         <div className="flight-place-block">
           <PlacePicker
