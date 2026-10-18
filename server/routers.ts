@@ -12,7 +12,6 @@ import { ENV } from "./_core/env";
 import { randomBytes } from "node:crypto";
 import { bookingRequestInputSchema } from "../shared/bookingRequest";
 import { buildDuffelOfferRequest, buildDuffelOfferRequestUrl } from "../shared/duffelSearch";
-import { sendBookingRequestEmail, sendTicketConfirmationEmail } from "./email";
 
 const locationSchema = z.object({
   city: z.string().trim().min(1, "City is required").max(120),
@@ -283,13 +282,11 @@ export const appRouter = router({
       const booking = await db.getBookingById(input.id);
       if (!booking?.travelerEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "Add a traveler email before sending a confirmation." });
       if (booking.paymentStatus !== "paid" || booking.ticketStatus !== "confirmed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only paid and confirmed bookings can receive a ticket email." });
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Email sending is not configured yet. Add RESEND_API_KEY and EMAIL_FROM to the project environment." });
       const pdf = await createTicketPdf(booking);
-      try {
-        await sendTicketConfirmationEmail({ ...booking, travelerEmail: booking.travelerEmail }, pdf);
-      } catch (error) {
-        console.error("[Email] Ticket confirmation failed:", error instanceof Error ? error.message : "unknown error");
-        throw new TRPCError({ code: "BAD_GATEWAY", message: "Inbox.eu could not send the booking confirmation. Please check the SMTP configuration." });
-      }
+      const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM || "Bluebird Airways <onboarding@resend.dev>", to: [booking.travelerEmail], subject: `Your Bluebird Airways ticket · ${booking.bookingReference}`, html: `<p>Hello ${booking.travelerName},</p><p>Your paid and confirmed Bluebird Airways booking <strong>${booking.bookingReference}</strong> is attached as a PDF ticket.</p><p>Departure: ${booking.departureCity} · Arrival: ${booking.arrivalCity}</p><p>Keep your booking reference nearby.</p>`, attachments: [{ filename: `bluebird-${booking.bookingReference}.pdf`, content: pdf.toString("base64") }] }) });
+      if (!response.ok) throw new TRPCError({ code: "BAD_GATEWAY", message: "The email provider could not send the booking confirmation." });
       return { sent: true as const, email: booking.travelerEmail };
     }),
   }),
@@ -519,12 +516,6 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
       }
       if (!request) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "We could not save your request. Please try again." });
-      try {
-        await sendBookingRequestEmail({ ...requestData, requestReference: request.requestReference });
-      } catch (error) {
-        console.error("[Email] Booking request failed:", error instanceof Error ? error.message : "unknown error");
-        throw new TRPCError({ code: "BAD_GATEWAY", message: "We saved your request, but Inbox.eu could not deliver the email. Please try again or contact Bluebird directly." });
-      }
       return { requestReference: request.requestReference, status: request.status, verifiedFare: { totalAmount: currentFare.totalAmount, totalCurrency: currentFare.totalCurrency, airlineName: currentFare.airlineName } };
     }),
     adminList: adminProcedure.query(() => db.listFlightRequests()),
