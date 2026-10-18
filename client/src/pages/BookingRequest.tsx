@@ -167,13 +167,10 @@ export default function BookingRequestPage() {
             <span className="request-receipt-icon">
               <CheckCircle2 size={24} />
             </span>
-            <p className="card-kicker">EMAIL DRAFT READY</p>
-            <h2>Your request email is ready</h2>
+            <p className="card-kicker">BOOKING SUBMITTED</p>
+            <h2>Your Request Has Been Submitted</h2>
             <p>
-              Your email app should open with your booking details addressed to
-              booking.bluebirdairways@inbox.eu. Press Send in that app to deliver your
-              request to Bluebird. This page cannot confirm whether the email
-              was sent.
+              Your booking request has been received, we’ll send your Booking reference to your email shortly. Thank you for trusting Bluebird!
             </p>
             <div className="request-receipt-actions">
               <a href={emailHref} className="primary-button">
