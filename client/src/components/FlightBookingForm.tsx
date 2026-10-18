@@ -603,10 +603,6 @@ export function FlightBookingForm({
         </div>
       )}
       <div className="flight-form-footer">
-        <p>
-          Traveler details stay in this browser session. A search or request
-          does not reserve a seat or take payment.
-        </p>
         <button
           className="primary-button"
           type="submit"

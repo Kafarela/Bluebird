@@ -347,11 +347,6 @@ export default function FlightAvailabilityPage() {
                         </div>
                       ))}
                       <div className="availability-offer-footer">
-                        <span>
-                          {offer.expiresAt
-                            ? `Offer expires ${fullDate(offer.expiresAt)}`
-                            : "Airline will reconfirm fare and availability"}
-                        </span>
                         <button
                           type="button"
                           className="primary-button"
@@ -369,11 +364,6 @@ export default function FlightAvailabilityPage() {
                   <p>Try a nearby airport or another travel date.</p>
                 </div>
               )}
-              <p className="results-note">
-                Live availability is supplied by Duffel. Choosing an offer only
-                starts a request for owner review; it does not reserve
-                inventory, issue a ticket, or collect payment.
-              </p>
             </>
           )}
         </section>
