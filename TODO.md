@@ -14,9 +14,10 @@
 
 ## Live flight booking request
 - [x] The Book a Flight planner accepts three-letter airport IATA codes for Duffel search, collects contact name, email, phone, and passenger names/genders, validates temporary session drafts, and keeps these details in session storage rather than URL parameters while the traveler searches. If the browser blocks session storage, it must not navigate without a recoverable draft.
-- [x] Each live offer lets the traveler continue to a request-review page showing the selected airline, fare and currency, route segments, dates, passenger count, and passenger/contact information, with the ability to correct contact/passenger details before submission.
+- [x] Each live offer has a “Send booking request →” action that opens a request-review page showing the selected airline, fare and currency, route segments, dates, passenger count, and passenger/contact information, with the ability to correct contact/passenger details before submission.
 - [x] Before submission, the server retrieves the selected offer from Duffel again and stores only the provider-returned fare and itinerary; it rejects expired/unavailable offers, route or passenger-count mismatches, and fare changes so the traveler must reselect. Submitting creates a database-backed request with a high-entropy unique request reference and New status. The traveler receives the reference and refreshed fare and is told explicitly that no inventory is held, price/availability must be reconfirmed, no ticket is issued, and no payment is taken.
 - [x] Request submission does not create an airline order, a confirmed ticket, a payment, or a public booking lookup record.
+- [x] After saving the request, the review receipt offers “Send Booking Request to Bluebird,” which opens a prefilled email to love4rela@gmail.com containing the request reference, contact and traveler details, selected route, dates, fare, and itinerary. The traveler reviews and sends it from their own email app.
 
 ## Owner request inbox
 - [x] Only authenticated users with the database-backed owner/admin role can list request contact/passenger PII, view the selected offer snapshot, or change request status and internal notes.

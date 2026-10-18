@@ -56,6 +56,7 @@ export default function BookingRequestPage() {
   const [passengers, setPassengers] =
     useState<BookingDraftPassenger[]>(initialPassengers);
   const [receipt, setReceipt] = useState("");
+  const [emailHref, setEmailHref] = useState("");
   const [receiptFare, setReceiptFare] = useState<{
     totalAmount: string;
     totalCurrency: string;
@@ -95,6 +96,48 @@ export default function BookingRequestPage() {
         route,
         selectedOffer: offer,
       });
+      const passengerLines = completedPassengers.map(
+        (passenger, index) =>
+          `Traveler ${index + 1}: ${passenger.fullName} | Gender: ${passenger.gender} | Type: ${passenger.type}`
+      );
+      const itineraryLines = offer.slices.flatMap((slice, sliceIndex) => [
+        `${sliceIndex === 0 ? "Outbound" : "Return"} itinerary${slice.duration ? ` (${slice.duration})` : ""}:`,
+        ...slice.segments.map(
+          segment =>
+            `- ${segment.origin} to ${segment.destination} | ${segment.operatingCarrier} ${segment.flightNumber} | ${formatMoment(segment.departureAt)} to ${formatMoment(segment.arrivalAt)}`
+        ),
+      ]);
+      const emailBody = [
+        "Hello Bluebird,",
+        "",
+        "Please review my booking request.",
+        `Request reference: ${result.requestReference}`,
+        "",
+        "Contact details:",
+        `Name: ${contactName.trim()}`,
+        `Email: ${contactEmail.trim()}`,
+        `Phone: ${contactPhone.trim()}`,
+        "",
+        "Travelers:",
+        ...passengerLines,
+        "",
+        "Selected flight:",
+        `Route: ${route.originLabel || route.origin} (${route.origin}) to ${route.destinationLabel || route.destination} (${route.destination})`,
+        `Trip: ${route.returnDate ? "Round trip" : "One way"}`,
+        `Departure: ${route.departureDate}`,
+        ...(route.returnDate ? [`Return: ${route.returnDate}`] : []),
+        `Passengers: ${route.passengerCount}`,
+        `Cabin: ${route.cabinClass.replaceAll("_", " ")}`,
+        `Airline: ${result.verifiedFare.airlineName}`,
+        `Fare: ${money(result.verifiedFare.totalAmount, result.verifiedFare.totalCurrency)}`,
+        ...itineraryLines,
+        "",
+        "Fare and availability must be reconfirmed. No seat is held, ticket issued, or payment taken.",
+      ].join("\n");
+      const emailSubject = `Bluebird booking request ${result.requestReference}`;
+      setEmailHref(
+        `mailto:love4rela@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+      );
       clearBookingDraft();
       setReceiptFare(result.verifiedFare);
       setReceipt(result.requestReference);
@@ -132,7 +175,7 @@ export default function BookingRequestPage() {
             <span className="request-receipt-icon">
               <CheckCircle2 size={24} />
             </span>
-            <p className="card-kicker">REQUEST RECEIVED</p>
+            <p className="card-kicker">REQUEST SAVED</p>
             <h2>{receipt}</h2>
             {receiptFare && (
               <p className="request-verified-fare">
@@ -142,12 +185,18 @@ export default function BookingRequestPage() {
               </p>
             )}
             <p>
-              We saved your request. This is not a reservation or ticket: no
-              seat is held, no ticket has been issued, and no payment was taken.
-              Fare and availability must be reconfirmed by Bluebird.
+              We saved your request. Use the button below to open a prefilled
+              email to love4rela@gmail.com, review it, and press Send in your
+              email app. This is not a reservation or ticket: no seat is held,
+              no ticket has been issued, and no payment was taken. Fare and
+              availability must be reconfirmed by Bluebird.
             </p>
             <div className="request-receipt-actions">
-              <Link href="/" className="primary-button">
+              <a href={emailHref} className="primary-button">
+                <Mail size={16} /> Send Booking Request to Bluebird
+                <ArrowRight size={16} />
+              </a>
+              <Link href="/" className="secondary-button">
                 Return home <ArrowRight size={16} />
               </Link>
               <Link href="/help" className="secondary-button">
@@ -367,8 +416,8 @@ export default function BookingRequestPage() {
                   }
                 >
                   {submitRequest.isPending
-                    ? "Sending request…"
-                    : "Send booking request"}{" "}
+                    ? "Saving request…"
+                    : "Save request and prepare email"}{" "}
                   <ArrowRight size={16} />
                 </button>
               </div>

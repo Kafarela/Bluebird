@@ -357,7 +357,7 @@ export default function FlightAvailabilityPage() {
                           className="primary-button"
                           onClick={() => selectOffer(offer)}
                         >
-                          Continue with this flight <ArrowRight size={15} />
+                          Send booking request <ArrowRight size={15} />
                         </button>
                       </div>
                     </article>
