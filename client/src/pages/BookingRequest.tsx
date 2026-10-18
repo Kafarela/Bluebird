@@ -1,11 +1,9 @@
-import { FormEvent, useState } from "react";
+import { useState, type MouseEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Clock3,
   Mail,
-  Phone,
   Plane,
   ShieldCheck,
 } from "lucide-react";
@@ -17,10 +15,8 @@ import type {
 } from "@shared/bookingRequest";
 import {
   readBookingDraft,
-  clearBookingDraft,
   type BookingDraftPassenger,
 } from "@/lib/bookingDraft";
-import { trpc } from "@/lib/trpc";
 import { SiteShell } from "@/components/SiteShell";
 
 function formatMoment(value: string) {
@@ -50,7 +46,6 @@ function money(amount: string, currency: string) {
 const BOOKING_REQUEST_RECIPIENT = "love4rela@gmail.com";
 
 function buildBookingRequestEmailHref(data: {
-  requestReference?: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -73,9 +68,6 @@ function buildBookingRequestEmailHref(data: {
     "Hello Bluebird,",
     "",
     "Please review my booking request.",
-    ...(data.requestReference
-      ? [`Request reference: ${data.requestReference}`]
-      : []),
     "",
     "Contact details:",
     `Name: ${data.contactName.trim()}`,
@@ -96,11 +88,9 @@ function buildBookingRequestEmailHref(data: {
     `Fare: ${money(data.offer.totalAmount, data.offer.totalCurrency)}`,
     ...itineraryLines,
     "",
-    "Fare and availability must be reconfirmed. No seat is held, ticket issued, or payment taken.",
+    "Please confirm current fare and availability with Bluebird.",
   ].join("\n");
-  const emailSubject = data.requestReference
-    ? `Bluebird booking request ${data.requestReference}`
-    : `Bluebird booking request: ${data.route.origin} to ${data.route.destination}`;
+  const emailSubject = `Bluebird booking request: ${data.route.origin} to ${data.route.destination}`;
   return `mailto:${BOOKING_REQUEST_RECIPIENT}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 }
 
@@ -116,18 +106,10 @@ export default function BookingRequestPage() {
   const [contactPhone, setContactPhone] = useState(draft?.contactPhone || "");
   const [passengers, setPassengers] =
     useState<BookingDraftPassenger[]>(initialPassengers);
-  const [receipt, setReceipt] = useState("");
-  const [receiptFare, setReceiptFare] = useState<{
-    totalAmount: string;
-    totalCurrency: string;
-    airlineName: string;
-  } | null>(null);
-  const [error, setError] = useState("");
-  const submitRequest = trpc.bookingRequest.submit.useMutation();
+  const [emailDraftOpened, setEmailDraftOpened] = useState(false);
   const emailHref =
     route && offer
       ? buildBookingRequestEmailHref({
-          requestReference: receipt || undefined,
           contactName,
           contactEmail,
           contactPhone,
@@ -151,33 +133,13 @@ export default function BookingRequestPage() {
     );
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError("");
-    if (!route || !offer) return;
-    try {
-      const completedPassengers = passengers.map(passenger => ({
-        ...passenger,
-        gender: passenger.gender as RequestPassenger["gender"],
-      }));
-      const result = await submitRequest.mutateAsync({
-        contactName,
-        contactEmail,
-        contactPhone,
-        passengers: completedPassengers,
-        route,
-        selectedOffer: offer,
-      });
-      clearBookingDraft();
-      setReceiptFare(result.verifiedFare);
-      setReceipt(result.requestReference);
-    } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? `${submitError.message} You can still send it by email using the button above.`
-          : "We could not save your request. You can still send it by email using the button above."
-      );
+  const handleEmailClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    const form = event.currentTarget.closest("form");
+    if (form && !form.reportValidity()) {
+      event.preventDefault();
+      return;
     }
+    setEmailDraftOpened(true);
   };
 
   return (
@@ -188,50 +150,43 @@ export default function BookingRequestPage() {
             <span className="eyebrow-line" /> FLIGHT REQUEST
           </div>
           <h1>
-            {receipt
-              ? "Your request is with us."
+            {emailDraftOpened
+              ? "Your email is ready."
               : "Review the details before we take the next step."}
           </h1>
           <p>
-            {receipt
-              ? "Keep the reference below. Bluebird will recheck the live fare and availability before confirming any ticket."
+            {emailDraftOpened
+              ? "Finish sending your request from your email app."
               : "Choose a live offer, confirm your traveler details, and send a request for Bluebird to review."}
           </p>
         </div>
       </section>
       <main className="page-wrap section-block booking-request-page">
-        {receipt ? (
-          <section className="booking-request-receipt">
+        {emailDraftOpened ? (
+          <section className="booking-request-receipt email-ready-state" role="status" aria-live="polite">
             <span className="request-receipt-icon">
               <CheckCircle2 size={24} />
             </span>
-            <p className="card-kicker">REQUEST SAVED</p>
-            <h2>{receipt}</h2>
-            {receiptFare && (
-              <p className="request-verified-fare">
-                Duffel refreshed the selected offer when you submitted:{" "}
-                {receiptFare.airlineName} ·{" "}
-                {money(receiptFare.totalAmount, receiptFare.totalCurrency)}.
-              </p>
-            )}
+            <p className="card-kicker">EMAIL DRAFT READY</p>
+            <h2>Your request email is ready</h2>
             <p>
-              We saved your request. Use the button below to open a prefilled
-              email to love4rela@gmail.com, review it, and press Send in your
-              email app. This is not a reservation or ticket: no seat is held,
-              no ticket has been issued, and no payment was taken. Fare and
-              availability must be reconfirmed by Bluebird.
+              Your email app should open with your booking details addressed to
+              love4rela@gmail.com. Press Send in that app to deliver your
+              request to Bluebird. This page cannot confirm whether the email
+              was sent.
             </p>
             <div className="request-receipt-actions">
               <a href={emailHref} className="primary-button">
-                <Mail size={16} /> Send Booking Request to Bluebird
+                <Mail size={16} /> Open email again
                 <ArrowRight size={16} />
               </a>
-              <Link href="/" className="secondary-button">
-                Return home <ArrowRight size={16} />
-              </Link>
-              <Link href="/help" className="secondary-button">
-                Visit Help Centre
-              </Link>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setEmailDraftOpened(false)}
+              >
+                Back to review
+              </button>
             </div>
           </section>
         ) : !route || !offer ? (
@@ -310,17 +265,11 @@ export default function BookingRequestPage() {
                   ))}
                 </div>
               ))}
-              <div className="request-fare-note">
-                <Clock3 size={16} />
-                <span>
-                  {offer.expiresAt
-                    ? `Offer expiry shown by airline: ${formatMoment(offer.expiresAt)}.`
-                    : "Airline availability and fare may change before confirmation."}{" "}
-                  The offer is not held while your request is reviewed.
-                </span>
-              </div>
             </section>
-            <form className="request-details-card" onSubmit={submit}>
+            <form
+              className="request-details-card"
+              onSubmit={event => event.preventDefault()}
+            >
               <div className="request-step-heading">
                 <div>
                   <p className="card-kicker">TRAVELERS & CONTACT</p>
@@ -430,40 +379,16 @@ export default function BookingRequestPage() {
                   ))}
                 </div>
               </div>
-              {error && <div className="error-banner">{error}</div>}
               <div className="request-submit-footer">
-                <p>
-                  <Mail size={15} />
-                  <Phone size={15} /> The email button opens a prefilled message
-                  to Bluebird. Review and send it in your email app; saving to
-                  the Bluebird inbox is optional. No seat is held, ticket issued,
-                  or payment taken.
-                </p>
                 <div className="request-submit-actions">
                   <a
                     href={emailHref}
                     className="primary-button"
-                    onClick={event => {
-                      setError("");
-                      const form = event.currentTarget.closest("form");
-                      if (form && !form.reportValidity()) event.preventDefault();
-                    }}
+                    onClick={handleEmailClick}
                   >
                     <Mail size={16} /> Send Booking Request to Bluebird
                     <ArrowRight size={16} />
                   </a>
-                  <button
-                    type="submit"
-                    className="secondary-button"
-                    disabled={
-                      submitRequest.isPending ||
-                      passengers.length !== route.passengerCount
-                    }
-                  >
-                    {submitRequest.isPending
-                      ? "Saving to inbox…"
-                      : "Save to Bluebird inbox"}{" "}
-                  </button>
                 </div>
               </div>
             </form>

@@ -587,15 +587,13 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .request-segment strong { color: var(--navy); font-size: .9rem; }
 .request-segment small, .request-segment-times span { color: #76849a; font-size: .73rem; }
 .request-segment-times { align-items: flex-end; text-align: right; }
-.request-fare-note, .request-private-note { display: flex; align-items: flex-start; gap: 8px; color: #63728a; font-size: .75rem; line-height: 1.55; }
-.request-fare-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3e8ef; }
-.request-fare-note svg, .request-private-note svg { flex: 0 0 auto; color: var(--blue); }
+.request-private-note { display: flex; align-items: flex-start; gap: 8px; color: #63728a; font-size: .75rem; line-height: 1.55; }
+.request-private-note svg { flex: 0 0 auto; color: var(--blue); }
 .request-private-note { margin: 0 0 12px; }
 .request-passengers { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e3e8ef; }
 .request-passenger-card { grid-template-columns: 1fr 1fr 1fr; }
 .request-passenger-card > strong { grid-column: 1 / -1; }
 .request-submit-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e3e8ef; }
-.request-submit-footer p { display: flex; align-items: center; gap: 6px; max-width: 540px; margin: 0; color: #748198; font-size: .75rem; line-height: 1.5; }
 .request-submit-actions { display: flex; flex-direction: column; gap: 10px; min-width: 240px; }
 .request-submit-actions > * { width: 100%; justify-content: center; }
 .booking-request-receipt { max-width: 720px; margin: 0 auto; text-align: center; padding: 38px; }
