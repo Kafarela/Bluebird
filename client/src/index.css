@@ -649,3 +649,43 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 @media (max-width: 560px) { .passenger-details-heading { align-items: flex-start; flex-direction: column; gap: 4px; }.passenger-detail-card { grid-template-columns: 1fr; }.passenger-detail-card > strong { grid-column: auto; } }
 
 .request-verified-fare { padding: 11px 14px; border-left: 3px solid var(--blue-2); border-radius: 4px; background: #f1f6fc; color: var(--navy); font-weight: 700; }
+
+/* Shared homepage and live-flight form */
+.flight-booking-form { position: relative; display: block; padding: 28px; border: 1px solid #deddd7; border-radius: 14px; background: var(--white); color: var(--ink); box-shadow: var(--shadow); }
+.flight-booking-form-home { margin-top: 26px; background: #fffdf9; }
+.flight-trip-tabs { display: inline-flex; gap: 7px; margin-bottom: 22px; padding: 4px; border-radius: 10px; background: #efeee9; }
+.flight-trip-tabs button { min-height: 43px; padding: 10px 18px; border: 0; border-radius: 8px; color: #738094; background: transparent; font: inherit; font-size: .85rem; font-weight: 800; cursor: pointer; }
+.flight-trip-tabs button.active { color: white; background: #2f607e; box-shadow: 0 3px 8px rgba(28,62,85,.18); }
+.flight-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; align-items: start; }
+.flight-place-block { min-width: 0; }
+.place-picker { position: relative; display: block; min-width: 0; }
+.place-picker > label { display: block; margin: 0 0 7px; color: #62738a; font-size: .75rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+.place-picker input { width: 100%; min-height: 46px; padding: 12px 13px; border: 1px solid #d7d8d5; border-radius: 8px; color: #263648; background: #fff; font: inherit; }
+.place-picker input:focus { outline: 2px solid rgba(47,96,126,.22); border-color: #4c7892; }
+.place-suggestions { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0; display: flex; flex-direction: column; max-height: 275px; overflow-y: auto; border: 1px solid #d9e1e9; border-radius: 9px; background: white; box-shadow: 0 12px 28px rgba(25,43,61,.16); }
+.place-suggestions button { display: grid; grid-template-columns: 17px 1fr auto; align-items: center; gap: 9px; padding: 10px 12px; border: 0; border-bottom: 1px solid #edf0f3; color: #52617a; background: white; text-align: left; cursor: pointer; }
+.place-suggestions button:hover, .place-suggestions button:focus { background: #f2f6fa; }
+.place-suggestions button > span { display: flex; flex-direction: column; gap: 2px; }
+.place-suggestions button strong { color: var(--navy); font-size: .8rem; }
+.place-suggestions button small { color: #8290a2; font-size: .68rem; }
+.place-suggestions button b { color: #2f607e; font-size: .75rem; }
+.use-location-button { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 0; border: 0; color: #2f607e; background: transparent; font: inherit; font-size: .7rem; font-weight: 750; cursor: pointer; }
+.use-location-button:hover { text-decoration: underline; }
+.flight-booking-form .field { min-width: 0; }
+.flight-booking-form .field > span { display: block; margin-bottom: 7px; color: #62738a; font-size: .75rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.flight-booking-form .field input, .flight-booking-form .field select { width: 100%; min-height: 46px; }
+.flight-extra-passengers { margin-top: 23px; padding-top: 20px; border-top: 1px solid #e5e9ed; }
+.flight-extra-passengers > .card-kicker { margin: 0 0 13px; }
+.flight-extra-passengers .passenger-details-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.flight-extra-passengers .passenger-detail-card { align-items: end; }
+.flight-fare-note { margin: 14px 0 0; padding: 10px 12px; border-left: 3px solid #b98c41; border-radius: 4px; color: #665533; background: #fbf6e9; font-size: .75rem; line-height: 1.55; }
+.flight-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e5e9ed; }
+.flight-form-footer p { max-width: 490px; margin: 0; color: #738094; font-size: .74rem; line-height: 1.55; }
+.flight-form-footer .primary-button { flex: 0 0 auto; }
+.availability-page .flight-booking-form { margin-bottom: 24px; }
+@media (max-width: 900px) { .flight-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .flight-booking-form { padding: 20px 17px; }.flight-form-grid, .flight-extra-passengers .passenger-details-grid { grid-template-columns: 1fr; }.flight-form-footer { align-items: stretch; flex-direction: column; }.flight-form-footer .primary-button { width: 100%; justify-content: center; }.flight-trip-tabs { width: 100%; }.flight-trip-tabs button { flex: 1; } }
+
+.location-disclosure { display: block; margin-top: 5px; color: #8993a2; font-size: .64rem; line-height: 1.45; }
+
+.place-picker-error { display: block; margin-top: 5px; color: var(--red); font-size: .68rem; }

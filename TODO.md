@@ -21,3 +21,11 @@
 ## Owner request inbox
 - [x] Only authenticated users with the database-backed owner/admin role can list request contact/passenger PII, view the selected offer snapshot, or change request status and internal notes.
 - [x] The owner console displays new requests with reference, route, departure date, fare snapshot, contact details, passenger list, and status; the owner can mark each request New, Contacted, or Closed and save an internal note.
+
+
+## Revised homepage and Duffel flight-search form
+- [x] The homepage Book a Flight form and `/book` page use only these trip-search fields: Full Name; Gender with M/F; Phone number; Passenger category Adult, Youth, Teenager, or Adult&Kids; Number of Passengers 1 through 9; Layover Hub Non-Stop, Single Layover, or Multi-stop; From; To; Flight type One Way or Round Trip; Depart; and, only for Round Trip, Return.
+- [x] When Number of Passengers is greater than 1, show Full Name and Gender fields for every additional passenger. Adult&Kids assigns the first passenger as adult and the remaining passengers as kids.
+- [x] The origin is suggested from the current IP city/state. Both From and To provide a Use current location action. To defaults to Los Angeles, CA. City/airport suggestions resolve to valid Duffel IATA codes before a live search.
+- [x] Round Trip displays a required Return Date field; One Way hides it and excludes the return slice. Depart and Return dates are presented in MM/DD/YYYY format, and return must be after departure.
+- [x] The Duffel availability page uses the same passenger/contact, trip type, route, dates, passenger-count, and layover information; it displays the selected passenger details and preserves them only in session storage, not in URL parameters.

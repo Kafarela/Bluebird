@@ -1,16 +1,15 @@
-import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, Globe2, Plane, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowRight, Plane } from "lucide-react";
 import { useLocation } from "wouter";
 import type { RequestOffer } from "@shared/bookingRequest";
-import {
-  readBookingDraft,
-  writeBookingDraft,
-  type BookingDraftPassenger,
-} from "@/lib/bookingDraft";
+import { readBookingDraft, writeBookingDraft } from "@/lib/bookingDraft";
 import { trpc } from "@/lib/trpc";
 import { SiteShell } from "@/components/SiteShell";
+import {
+  FlightBookingForm,
+  type FlightSearchData,
+} from "@/components/FlightBookingForm";
 
-type CabinClass = "economy" | "premium_economy" | "business" | "first";
 type FlightSegment = {
   origin: string;
   destination: string;
@@ -28,14 +27,6 @@ type DuffelOffer = {
   ownerName: string;
   slices: FlightSlice[];
 };
-
-function initialCabin(value: string | null): CabinClass {
-  if (value === "premium_economy" || value === "premium economy")
-    return "premium_economy";
-  if (value === "business" || value === "Business Class") return "business";
-  if (value === "first" || value === "First Class") return "first";
-  return "economy";
-}
 
 function shortTime(value: string | null | undefined) {
   if (!value) return "—";
@@ -72,80 +63,112 @@ function priceLabel(amount: string, currency: string) {
   }
 }
 
+function initialSearch(): FlightSearchData {
+  const params = new URLSearchParams(window.location.search);
+  const draft = readBookingDraft();
+  const route = draft?.route;
+  const categoryValues = ["adult", "youth", "teenager", "adult_kids"] as const;
+  const requestedCategory =
+    route?.passengerCategory || params.get("passengerCategory");
+  const category = categoryValues.includes(
+    requestedCategory as (typeof categoryValues)[number]
+  )
+    ? (requestedCategory as FlightSearchData["passengerCategory"])
+    : "adult";
+  const requestedCount =
+    route?.passengerCount || Number(params.get("travelers")) || 1;
+  const boundedCount = Number.isFinite(requestedCount)
+    ? Math.max(1, Math.min(9, Math.floor(requestedCount)))
+    : 1;
+  const count =
+    category === "adult_kids" ? Math.max(2, boundedCount) : boundedCount;
+  const requestedConnections =
+    route?.maxConnections ?? Number(params.get("maxConnections") || 3);
+  const maxConnections =
+    requestedConnections === 0 ||
+    requestedConnections === 1 ||
+    requestedConnections === 3
+      ? requestedConnections
+      : 3;
+  const passengerCategory = category;
+  const passengerTypes = Array.from({ length: count }, (_, index) =>
+    passengerCategory === "adult_kids"
+      ? index === 0
+        ? ("adult" as const)
+        : ("kid" as const)
+      : passengerCategory
+  );
+  return {
+    origin: route?.origin || params.get("from")?.toUpperCase() || "",
+    destination: route?.destination || params.get("to")?.toUpperCase() || "LAX",
+    departureDate: route?.departureDate || params.get("date") || "",
+    returnDate: route ? route.returnDate || "" : params.get("returnDate") || "",
+    passengers: count,
+    passengerTypes,
+    passengerCategory,
+    maxConnections,
+  };
+}
+
 export default function FlightAvailabilityPage() {
-  const [location, navigate] = useLocation();
-  const params = useMemo(
-    () => new URLSearchParams(location.split("?")[1] || ""),
-    [location]
-  );
-  const [origin, setOrigin] = useState(
-    (params.get("from") || "").toUpperCase()
-  );
-  const [destination, setDestination] = useState(
-    (params.get("to") || "LAX").toUpperCase()
-  );
-  const [departureDate, setDepartureDate] = useState(params.get("date") || "");
-  const [returnDate, setReturnDate] = useState(params.get("returnDate") || "");
-  const [passengers, setPassengers] = useState(params.get("travelers") || "1");
-  const [cabinClass, setCabinClass] = useState<CabinClass>(
-    initialCabin(params.get("class"))
-  );
-  const [maxConnections, setMaxConnections] = useState(
-    params.get("maxConnections") ||
-      (params.get("layoverHub") === "Non-Stop"
-        ? "0"
-        : params.get("layoverHub") === "Single Layover"
-          ? "1"
-          : "3")
-  );
-  const [submitted, setSubmitted] = useState(
-    Boolean(params.get("from") && params.get("date"))
+  const [, navigate] = useLocation();
+  const [search, setSearch] = useState<FlightSearchData>(initialSearch);
+  const [submitted, setSubmitted] = useState(() =>
+    Boolean(initialSearch().origin && initialSearch().departureDate)
   );
   const [selectionError, setSelectionError] = useState("");
   const query = trpc.duffel.search.useQuery(
     {
-      origin,
-      destination,
-      departureDate,
-      returnDate,
-      passengers: Number(passengers),
-      cabinClass,
-      maxConnections: Number(maxConnections),
+      origin: search.origin,
+      destination: search.destination,
+      departureDate: search.departureDate,
+      returnDate: search.returnDate,
+      passengers: search.passengers,
+      passengerTypes: search.passengerTypes,
+      cabinClass: "economy",
+      maxConnections: search.maxConnections,
     },
     {
       enabled:
         submitted &&
-        /^[A-Za-z]{3}$/.test(origin) &&
-        /^[A-Za-z]{3}$/.test(destination) &&
-        Boolean(departureDate),
+        /^[A-Za-z]{3}$/.test(search.origin) &&
+        /^[A-Za-z]{3}$/.test(search.destination) &&
+        Boolean(search.departureDate),
       retry: false,
     }
   );
   const offers = (query.data?.offers || []) as DuffelOffer[];
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submitSearch = (data: FlightSearchData) => {
+    setSelectionError("");
+    setSearch(data);
     setSubmitted(true);
   };
 
   const selectOffer = (offer: DuffelOffer) => {
     const existing = readBookingDraft();
-    const count = Number(passengers);
-    const travelerList: BookingDraftPassenger[] =
-      existing?.passengers?.length === count
-        ? existing.passengers
-        : Array.from({ length: count }, () => ({
-            fullName: "",
-            gender: "" as const,
-            type: "adult" as const,
-          }));
+    const count = search.passengers;
+    const travelerList = Array.from({ length: count }, (_, index) => {
+      const type =
+        search.passengerCategory === "adult_kids"
+          ? index === 0
+            ? ("adult" as const)
+            : ("kid" as const)
+          : search.passengerCategory;
+      const traveler = existing?.passengers?.[index] || {
+        fullName: "",
+        gender: "" as const,
+        type,
+      };
+      return { ...traveler, type };
+    });
     const outboundSegments = offer.slices[0]?.segments || [];
     const selectedOrigin =
-      outboundSegments[0]?.origin.toUpperCase() || origin.toUpperCase();
+      outboundSegments[0]?.origin.toUpperCase() || search.origin.toUpperCase();
     const selectedDestination =
       outboundSegments[
         outboundSegments.length - 1
-      ]?.destination.toUpperCase() || destination.toUpperCase();
+      ]?.destination.toUpperCase() || search.destination.toUpperCase();
     const selectedOffer: RequestOffer = {
       id: offer.id,
       offerRequestId: query.data?.offerRequestId || null,
@@ -166,17 +189,21 @@ export default function FlightAvailabilityPage() {
       })),
     };
     const saved = writeBookingDraft({
+      ...existing,
       contactName: existing?.contactName || travelerList[0]?.fullName || "",
-      contactEmail: existing?.contactEmail || "",
-      contactPhone: existing?.contactPhone || "",
       passengers: travelerList,
       route: {
         origin: selectedOrigin,
+        originLabel: existing?.route?.originLabel || selectedOrigin,
         destination: selectedDestination,
-        departureDate,
-        returnDate: returnDate || null,
+        destinationLabel:
+          existing?.route?.destinationLabel || selectedDestination,
+        departureDate: search.departureDate,
+        returnDate: search.returnDate || null,
         passengerCount: count,
-        cabinClass,
+        cabinClass: "economy",
+        passengerCategory: search.passengerCategory,
+        maxConnections: search.maxConnections as 0 | 1 | 3,
       },
       selectedOffer,
     });
@@ -199,125 +226,13 @@ export default function FlightAvailabilityPage() {
           </div>
           <h1>See what is available right now.</h1>
           <p>
-            Search current airline offers by airport code, then choose a flight
-            to review before sending a request.
+            Use the same traveler, route, date, and layover details to check
+            live airline offers.
           </p>
         </div>
       </section>
       <main className="page-wrap section-block availability-page">
-        <form
-          className="planner-card availability-search-card"
-          onSubmit={submit}
-        >
-          <div className="planner-top">
-            <div>
-              <p className="card-kicker">DUFFEL FLIGHTS API</p>
-              <h2>Find available flights</h2>
-            </div>
-            <span className="planner-badge">
-              <Globe2 size={15} /> Live offers
-            </span>
-          </div>
-          <div className="booking-form-grid">
-            <label className="field">
-              <span>From (IATA code)</span>
-              <input
-                value={origin}
-                onChange={event => setOrigin(event.target.value.toUpperCase())}
-                placeholder="JFK"
-                minLength={3}
-                maxLength={3}
-                pattern="[A-Za-z]{3}"
-                title="Enter a three-letter IATA airport code."
-                required
-              />
-              <small>
-                Use a 3-letter airport code such as JFK, LAX, or LHR.
-              </small>
-            </label>
-            <label className="field">
-              <span>To (IATA code)</span>
-              <input
-                value={destination}
-                onChange={event =>
-                  setDestination(event.target.value.toUpperCase())
-                }
-                placeholder="LAX"
-                minLength={3}
-                maxLength={3}
-                pattern="[A-Za-z]{3}"
-                title="Enter a three-letter IATA airport code."
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Departure</span>
-              <input
-                type="date"
-                value={departureDate}
-                onChange={event => setDepartureDate(event.target.value)}
-                min={new Date().toISOString().slice(0, 10)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Return (optional)</span>
-              <input
-                type="date"
-                value={returnDate}
-                onChange={event => setReturnDate(event.target.value)}
-                min={departureDate || new Date().toISOString().slice(0, 10)}
-              />
-            </label>
-            <label className="field">
-              <span>Passengers</span>
-              <select
-                value={passengers}
-                onChange={event => setPassengers(event.target.value)}
-              >
-                {Array.from({ length: 9 }, (_, index) => (
-                  <option key={index + 1} value={String(index + 1)}>
-                    {index + 1} traveler{index ? "s" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Cabin</span>
-              <select
-                value={cabinClass}
-                onChange={event =>
-                  setCabinClass(event.target.value as CabinClass)
-                }
-              >
-                <option value="economy">Economy</option>
-                <option value="premium_economy">Premium economy</option>
-                <option value="business">Business class</option>
-                <option value="first">First class</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Stops</span>
-              <select
-                value={maxConnections}
-                onChange={event => setMaxConnections(event.target.value)}
-              >
-                <option value="0">Non-stop</option>
-                <option value="1">Up to 1 connection</option>
-                <option value="3">Up to 3 connections</option>
-              </select>
-            </label>
-          </div>
-          <div className="booking-form-footer">
-            <p>
-              Search uses adult fares; contact Bluebird for child or infant
-              pricing. A request does not hold a seat.
-            </p>
-            <button type="submit" className="primary-button">
-              <Search size={17} /> Check availability
-            </button>
-          </div>
-        </form>
+        <FlightBookingForm mode="availability" onSearch={submitSearch} />
         {selectionError && (
           <div className="error-banner" role="alert">
             {selectionError}
@@ -328,21 +243,25 @@ export default function FlightAvailabilityPage() {
             <div className="empty-state">
               <h3>Ready when you are.</h3>
               <p>
-                Enter your route and dates above to search live airline offers.
+                Choose a city or airport and enter your trip details above to
+                search live offers.
               </p>
             </div>
           ) : query.isLoading ? (
             <div className="empty-state">
               <h3>Searching live airline offers…</h3>
-              <p>Duffel is checking the selected route and passenger count.</p>
+              <p>
+                Duffel is checking your selected route, passenger category, and
+                dates.
+              </p>
             </div>
           ) : query.isError ? (
             <div className="empty-state">
               <h3>We could not complete that search.</h3>
               <p>{query.error.message}</p>
               <p>
-                Use IATA codes only and make sure the departure date is valid
-                for booking.
+                Choose a city or airport suggestion and confirm the dates are
+                valid.
               </p>
             </div>
           ) : (
@@ -355,7 +274,7 @@ export default function FlightAvailabilityPage() {
                   </h2>
                 </div>
                 <span>
-                  {origin} → {destination}
+                  {search.origin} → {search.destination}
                 </span>
               </div>
               {offers.length ? (

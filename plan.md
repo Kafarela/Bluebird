@@ -11,6 +11,7 @@ Turn the supplied Bluebird Airways mockup into a working, database-backed travel
 - **Persistence:** Existing PostgreSQL `flight_bookings` and `flight_schedules` remain intact. Add a `flight_requests` table with an opaque request reference, contact details, passenger list, search route, server-refreshed selected-offer snapshot, owner status/notes, and timestamps. Railway's existing pre-deploy `db:sync` keeps the schema synchronized.
 - **Authorization:** Keep the existing session and database-backed owner role. All request inbox reads and status/notes updates require the owner role. Public travelers may submit only a request, not create or modify tickets.
 - **Flight request flow:** Keep traveler/contact data in a validated, session-scoped browser draft rather than URL parameters. Before storing a request, retrieve the selected offer again from Duffel, reject expired or unavailable offers and any fare change that requires the traveler to choose again, verify the route/passenger count, and store only provider-returned fare and segment data. Then show the refreshed fare and a receipt with a high-entropy unique reference. State clearly that this does not reserve inventory, guarantee the fare, issue a ticket, or charge the traveler.
+- **Flight search form:** Reuse one responsive form on the homepage, `/book`, and the Duffel availability page. It collects only the requested passenger/contact, passenger category/count, layover preference, route, flight type, and dates. Round trips require a return date; one-way searches omit it. Duffel Place Suggestions resolve city/airport selections to IATA codes. IP-derived origin is approximate; explicit current-location actions use browser geolocation permission. Keep names and phone numbers in session storage, never URL parameters.
 - **Destinations:** Include USA, United Kingdom, Canada, every North and South American country in a curated destination directory, plus worldwide free-form city/state/country fields in admin booking forms.
 - **Validation:** Use Zod on tRPC input, normalize booking references to uppercase, require valid schedule ordering and non-negative money fields, enforce unique references, and validate request contact/passenger/route/offer fields and matching passenger counts.
 - **Frontend data flow:** Use generated tRPC hooks. Public booking lookup and booking-request submission do not require login; the owner dashboard and request inbox require an authenticated user whose database role is `admin`.
@@ -18,10 +19,11 @@ Turn the supplied Bluebird Airways mockup into a working, database-backed travel
 ## Project structure
 
 - `client/src/App.tsx`: route manifest and shared shell.
-- `client/src/pages/Home.tsx`: mockup-inspired homepage with working search card, offers, destinations, and quick actions.
+- `client/src/pages/Home.tsx`: mockup-inspired homepage with the shared location-aware booking form, offers, destinations, and quick actions.
 - `client/src/pages/PublicPages.tsx`: Login/Sign Up, My Bookings, Destinations, and informational pages. `BookPage.tsx` and `FlightAvailability.tsx` implement the planner and live offer selection.
 - `client/src/pages/BookingRequest.tsx`: traveler review, request submission, and receipt.
 - `client/src/components/FlightRequestInbox.tsx`: owner-only booking request triage.
+- `client/src/components/FlightBookingForm.tsx` and `PlacePicker.tsx`: shared passenger/route/date form and Duffel-backed city/airport suggestions.
 - `client/src/pages/Admin.tsx`: owner claim/login gate and create/edit ticket workspace.
 - `client/src/index.css`: Bluebird visual system and responsive layout.
 - `server/routers.ts`: booking, request, schedule, authentication, and owner tRPC procedures.

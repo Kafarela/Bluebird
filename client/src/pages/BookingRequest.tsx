@@ -343,6 +343,7 @@ export default function BookingRequestPage() {
                           }
                         >
                           <option value="adult">Adult</option>
+                          <option value="youth">Youth</option>
                           <option value="kid">Kid</option>
                           <option value="teenager">Teenager</option>
                         </select>

@@ -29,7 +29,7 @@ const bookingDraftSchema = z.object({
       z.object({
         fullName: z.string().max(180),
         gender: z.enum(["", "M", "F"]),
-        type: z.enum(["adult", "kid", "teenager"]),
+        type: z.enum(["adult", "youth", "kid", "teenager"]),
       })
     )
     .max(9)

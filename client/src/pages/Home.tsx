@@ -1,6 +1,6 @@
-import { FormEvent, useState } from "react";
 import { ArrowRight, CalendarCheck, CheckCircle2, ChevronRight, Globe2, Headphones, MapPin, Search, ShieldCheck, Sparkles, TicketCheck } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import { FlightBookingForm } from "@/components/FlightBookingForm";
 import { SiteShell } from "@/components/SiteShell";
 
 const featuredDestinations = [
@@ -11,22 +11,6 @@ const featuredDestinations = [
 ];
 
 export default function Home() {
-  const [, navigate] = useLocation();
-  const [trip, setTrip] = useState("roundtrip");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [date, setDate] = useState("");
-
-  const handleSearch = (event: FormEvent) => {
-    event.preventDefault();
-    const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    if (date) params.set("date", date);
-    params.set("trip", trip);
-    navigate(`/book?${params.toString()}`);
-  };
-
   return (
     <SiteShell>
       <section className="hero-section">
@@ -41,22 +25,7 @@ export default function Home() {
             <Link href="/destinations" className="text-link light-link">Explore destinations <ChevronRight size={16} /></Link>
           </div>
 
-          <form className="search-panel" onSubmit={handleSearch}>
-            <div className="search-tabs" role="tablist" aria-label="Trip type">
-              {[['roundtrip', 'Round trip'], ['oneway', 'One way']].map(([value, label]) => (
-                <button type="button" key={value} className={`search-tab ${trip === value ? "active" : ""}`} onClick={() => setTrip(value)}>{label}</button>
-              ))}
-            </div>
-            <div className="search-fields">
-              <label className="field field-route"><span>From</span><input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="City or airport" /></label>
-              <div className="route-arrow" aria-hidden="true">→</div>
-              <label className="field field-route"><span>To</span><input value={to} onChange={(e) => setTo(e.target.value)} placeholder="City or airport" /></label>
-              <label className="field"><span>Departure</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
-              <label className="field field-passengers"><span>Passengers</span><select defaultValue="1"><option>1 traveler</option><option>2 travelers</option><option>3 travelers</option><option>4+ travelers</option></select></label>
-              <button className="primary-button search-button" type="submit"><Search size={18} /> Search flights</button>
-            </div>
-            <p className="search-note"><Sparkles size={14} /> Search a route, then keep every booking detail in one clear place.</p>
-          </form>
+          <FlightBookingForm mode="home" />
         </div>
       </section>
 
