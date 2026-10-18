@@ -43,7 +43,7 @@ function money(amount: string, currency: string) {
   }
 }
 
-const BOOKING_REQUEST_RECIPIENT = "love4rela@gmail.com";
+const BOOKING_REQUEST_RECIPIENT = "booking.bluebirdairways@inbox.eu";
 
 function buildBookingRequestEmailHref(data: {
   contactName: string;
