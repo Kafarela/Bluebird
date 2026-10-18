@@ -568,6 +568,75 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 @media (max-width: 560px) { .booking-planner-card { padding: 21px; }.booking-form-grid { grid-template-columns: 1fr; gap: 16px; }.booking-form-footer { align-items: stretch; flex-direction: column; gap: 14px; }.booking-form-footer .primary-button { width: 100%; }.book-page-content { width: min(100% - 24px, 520px); } }
 
 /* Traveler detail expansion and route-choice sections. */
+/* Live-offer request review and owner inbox. */
+.booking-request-page { display: flex; flex-direction: column; gap: 18px; }
+.request-step-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 14px; }
+.request-step-heading h2 { color: var(--navy); font-size: 1.45rem; letter-spacing: -.035em; margin: 4px 0 0; }
+.request-step-heading .card-kicker { margin: 0; }
+.request-step-heading .text-link { display: inline-flex; align-items: center; gap: 6px; }
+.request-itinerary-card, .request-details-card, .booking-request-receipt { padding: 25px; border: 1px solid #deddd7; border-radius: 12px; background: white; box-shadow: var(--shadow); }
+.request-itinerary-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.request-itinerary-heading h3 { margin: 4px 0 0; color: var(--navy); font-size: 1.35rem; }
+.request-itinerary-heading h3 span, .request-segment strong span { color: var(--blue-2); padding: 0 4px; }
+.request-itinerary-heading > strong { color: var(--navy); font-size: 1.35rem; white-space: nowrap; }
+.request-itinerary-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 0; color: #748198; font-size: .78rem; }
+.request-slice { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3e8ef; }
+.request-slice > .card-kicker { margin-bottom: 8px; }
+.request-segment { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; }
+.request-segment > div:first-child, .request-segment-times { display: flex; flex-direction: column; gap: 4px; }
+.request-segment strong { color: var(--navy); font-size: .9rem; }
+.request-segment small, .request-segment-times span { color: #76849a; font-size: .73rem; }
+.request-segment-times { align-items: flex-end; text-align: right; }
+.request-fare-note, .request-private-note { display: flex; align-items: flex-start; gap: 8px; color: #63728a; font-size: .75rem; line-height: 1.55; }
+.request-fare-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3e8ef; }
+.request-fare-note svg, .request-private-note svg { flex: 0 0 auto; color: var(--blue); }
+.request-private-note { margin: 0 0 12px; }
+.request-passengers { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e3e8ef; }
+.request-passenger-card { grid-template-columns: 1fr 1fr 1fr; }
+.request-passenger-card > strong { grid-column: 1 / -1; }
+.request-submit-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e3e8ef; }
+.request-submit-footer p { display: flex; align-items: center; gap: 6px; max-width: 540px; margin: 0; color: #748198; font-size: .75rem; line-height: 1.5; }
+.booking-request-receipt { max-width: 720px; margin: 0 auto; text-align: center; padding: 38px; }
+.request-receipt-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 17px; border-radius: 50%; color: #247247; background: #eaf5ed; }
+.booking-request-receipt h2 { margin: 5px 0 12px; color: var(--navy); font-size: 1.7rem; letter-spacing: .08em; }
+.booking-request-receipt > p:not(.card-kicker) { max-width: 560px; margin: 0 auto; color: #68768e; line-height: 1.65; font-size: .86rem; }
+.request-receipt-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 23px; }
+.flight-request-inbox { margin: 22px 0; padding: 23px; border: 1px solid #dfe6ef; border-radius: 12px; background: #f8fafc; }
+.flight-request-inbox-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 17px; }
+.flight-request-inbox-heading h2 { display: flex; align-items: center; gap: 8px; margin: 4px 0 5px; color: var(--navy); font-size: 1.3rem; }
+.flight-request-inbox-heading h2 svg { color: var(--blue); }
+.flight-request-inbox-heading p:not(.card-kicker) { margin: 0; color: #75839a; font-size: .76rem; }
+.flight-request-list { display: flex; flex-direction: column; gap: 12px; }
+.flight-request-card { padding: 18px; border: 1px solid #e0e6ef; border-radius: 10px; background: white; }
+.flight-request-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.flight-request-top h3 { margin: 3px 0; color: var(--navy); font-size: 1.05rem; }
+.flight-request-top h3 span { color: var(--blue-2); padding: 0 3px; }
+.flight-request-top > div > p:last-child { margin: 0; color: #7b8799; font-size: .74rem; }
+.request-status-pill { padding: 6px 9px; border-radius: 99px; font-size: .66rem; font-weight: 800; white-space: nowrap; }
+.request-status-new { color: #754b0b; background: #fff1d7; }
+.request-status-contacted { color: #1b5482; background: #e5f2fc; }
+.request-status-closed { color: #3d5f4a; background: #e8f3eb; }
+.flight-request-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 15px; padding: 12px; border-radius: 8px; background: #f4f7fb; }
+.flight-request-summary > div { display: flex; flex-direction: column; gap: 4px; }
+.flight-request-summary span, .flight-request-travelers .card-kicker { color: #8491a4; font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.flight-request-summary strong { color: var(--navy); font-size: .78rem; text-transform: capitalize; }
+.flight-request-contact { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 13px; }
+.flight-request-contact > div { display: flex; align-items: center; gap: 6px; color: var(--blue); font-size: .76rem; }
+.flight-request-contact a { color: var(--blue); text-decoration: none; }
+.flight-request-contact a:hover { text-decoration: underline; }
+.flight-request-travelers { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-top: 13px; }
+.flight-request-travelers .card-kicker { width: 100%; margin: 0; }
+.flight-request-travelers > span { padding: 5px 8px; border: 1px solid #e2e8ef; border-radius: 6px; color: #52617a; font-size: .7rem; }
+.flight-request-segments { margin-top: 12px; color: #607089; font-size: .75rem; }
+.flight-request-segments summary { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--blue); font-weight: 750; }
+.flight-request-segments > div { margin: 9px 0 0 20px; }
+.flight-request-segments p { margin: 5px 0; }
+.flight-request-manage { display: grid; grid-template-columns: minmax(120px, .7fr) minmax(220px, 2fr) auto; align-items: end; gap: 12px; margin-top: 15px; padding-top: 14px; border-top: 1px solid #e5eaf1; }
+.flight-request-manage .field { min-width: 0; }
+.flight-request-manage textarea { resize: vertical; }
+.segment-date { grid-column: 1 / -1; color: #8b96a7; font-size: .65rem; }
+@media (max-width: 760px) { .flight-request-manage { grid-template-columns: 1fr; }.flight-request-manage .secondary-button { justify-content: center; }.request-submit-footer { align-items: stretch; flex-direction: column; }.request-submit-footer .primary-button { width: 100%; justify-content: center; }.request-passenger-card { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .request-itinerary-card, .request-details-card, .flight-request-inbox { padding: 18px; }.request-step-heading { align-items: flex-start; flex-direction: column; }.request-itinerary-heading { flex-direction: column; gap: 8px; }.request-segment { align-items: flex-start; flex-direction: column; }.request-segment-times { align-items: flex-start; text-align: left; }.request-passenger-card { grid-template-columns: 1fr; }.request-passenger-card > strong { grid-column: auto; }.flight-request-summary { grid-template-columns: 1fr; }.flight-request-top { flex-direction: column; }.booking-request-receipt { padding: 25px 20px; } }
 .passenger-details-section { margin-top: 26px; padding-top: 22px; border-top: 1px solid #e1e7ef; }
 .passenger-details-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin-bottom: 15px; }
 .passenger-details-heading .card-kicker { margin-bottom: 0; }
@@ -578,3 +647,5 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .route-details-grid { margin-top: 26px; padding-top: 25px; border-top: 1px solid #e1e7ef; }
 @media (max-width: 820px) { .passenger-details-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .passenger-details-heading { align-items: flex-start; flex-direction: column; gap: 4px; }.passenger-detail-card { grid-template-columns: 1fr; }.passenger-detail-card > strong { grid-column: auto; } }
+
+.request-verified-fare { padding: 11px 14px; border-left: 3px solid var(--blue-2); border-radius: 4px; background: #f1f6fc; color: var(--navy); font-weight: 700; }

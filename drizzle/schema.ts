@@ -1,4 +1,4 @@
-import { integer, numeric, pgEnum, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 const userRole = pgEnum("user_role", ["user", "admin"]);
 const travelerType = pgEnum("traveler_type", ["adult", "kid", "teenager"]);
@@ -96,3 +96,25 @@ export const flightSchedules = pgTable("flight_schedules", {
 
 export type FlightSchedule = typeof flightSchedules.$inferSelect;
 export type InsertFlightSchedule = typeof flightSchedules.$inferInsert;
+
+export type RequestPassenger = { fullName: string; gender: "M" | "F"; type: "adult" | "kid" | "teenager" };
+export type RequestRoute = { origin: string; destination: string; departureDate: string; returnDate: string | null; passengerCount: number; cabinClass: "economy" | "premium_economy" | "business" | "first" };
+export type RequestOffer = { id: string; offerRequestId: string | null; airlineName: string; totalAmount: string; totalCurrency: string; expiresAt: string | null; slices: Array<{ duration: string | null; segments: Array<{ origin: string; destination: string; departureAt: string; arrivalAt: string; operatingCarrier: string; flightNumber: string }> }> };
+
+export const flightRequests = pgTable("flight_requests", {
+  id: serial("id").primaryKey(),
+  requestReference: varchar("requestReference", { length: 20 }).notNull().unique(),
+  contactName: varchar("contactName", { length: 180 }).notNull(),
+  contactEmail: varchar("contactEmail", { length: 320 }).notNull(),
+  contactPhone: varchar("contactPhone", { length: 60 }).notNull(),
+  passengers: jsonb("passengers").$type<RequestPassenger[]>().notNull(),
+  route: jsonb("route").$type<RequestRoute>().notNull(),
+  selectedOffer: jsonb("selectedOffer").$type<RequestOffer>().notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("new"),
+  ownerNotes: text("ownerNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type FlightRequest = typeof flightRequests.$inferSelect;
+export type InsertFlightRequest = typeof flightRequests.$inferInsert;

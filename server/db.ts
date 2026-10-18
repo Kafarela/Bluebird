@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { flightBookings, flightSchedules, InsertFlightBooking, InsertFlightSchedule, InsertUser, ownerClaims, users } from "../drizzle/schema";
+import { flightBookings, flightRequests, flightSchedules, InsertFlightBooking, InsertFlightRequest, InsertFlightSchedule, InsertUser, ownerClaims, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _pool: Pool | null = null;
@@ -238,4 +238,24 @@ export async function deleteFlightSchedule(id: number) {
   if (!db) throw new Error("Database is not available");
   await db.delete(flightSchedules).where(eq(flightSchedules.id, id));
   return { success: true as const };
+}
+
+export async function createFlightRequest(request: InsertFlightRequest) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(flightRequests).values(request).returning();
+  return result[0];
+}
+
+export async function listFlightRequests() {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  return db.select().from(flightRequests).orderBy(desc(flightRequests.createdAt));
+}
+
+export async function updateFlightRequest(id: number, input: { status: "new" | "contacted" | "closed"; ownerNotes: string | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.update(flightRequests).set({ ...input, updatedAt: new Date() }).where(eq(flightRequests.id, id)).returning();
+  return result[0] ?? null;
 }
