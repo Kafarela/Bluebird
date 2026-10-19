@@ -549,7 +549,8 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .schedule-row-price { color: var(--navy); font-size: .84rem; font-weight: 800; text-align: right; }
 .schedule-row-price small { display: block; margin-top: 3px; color: var(--green); font-size: .64rem; font-weight: 700; }
 .site-root-no-watermark::before { display: none; }
-.bookings-page { min-height: 520px; background-position: center; background-size: cover; border-radius: 18px; }
+.bookings-page { display: flex; flex-direction: column; align-items: center; min-height: 520px; background-position: center; background-size: cover; border-radius: 18px; }
+.bookings-page > .lookup-card, .bookings-page > .lookup-result-area { width: min(100%, 680px); }
 .bookings-page .lookup-card, .bookings-page .empty-state { background: rgba(255,255,255,.96); }
 @media (max-width: 820px) { .plan-route-layout { grid-template-columns: 1fr; }.schedule-row { grid-template-columns: minmax(0,1fr) auto; }.schedule-row .edit-row-button, .schedule-row .icon-button { justify-self: start; }.schedule-row-price { text-align: right; } }
 @media (max-width: 560px) { .plan-route-card, .plan-route-aside, .schedule-manager { padding: 21px; }.route-request-meta { grid-template-columns: 1fr; gap: 0; }.route-request-meta div, .route-request-meta div:first-child { padding: 12px 0; border-left: 0; border-bottom: 1px solid #e1e8f1; }.route-request-meta div:last-child { border-bottom: 0; }.plan-route-email { width: 100%; text-align: center; }.bookings-page { min-height: 590px; margin-left: -12px; margin-right: -12px; border-radius: 0; }.schedule-row { grid-template-columns: 1fr; }.schedule-row-price { text-align: left; }.schedule-row .edit-row-button, .schedule-row .icon-button { justify-self: start; } }
